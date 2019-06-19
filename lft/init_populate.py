@@ -6,7 +6,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 import pandas as pd
 
-from lft.db_def import Aggregate, Kraken
+from db_def import Aggregate, Kraken
 
 engine = create_engine('sqlite:///data.db', echo=True)
 
