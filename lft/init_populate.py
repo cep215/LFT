@@ -57,8 +57,10 @@ def insert_df_aggregate(df):
     # Create objects
     for index, row in df.iterrows():
         # access data using column names
-        if(session.query(Aggregate.id).filter_by(time=row['time']).scalar()
-                is None):
+        item = session.query(Aggregate).filter_by(time=row['time']).first()
+        if (item is None):
+            # if(session.query(Aggregate.id).filter_by(time=row['time']).scalar()
+            #         is None):
             agg = Aggregate(row['time'], row['close'], row['high'], row['low'],
                             row['open'], row['volumefrom'], row['volumeto'])
             session.add(agg)
@@ -73,8 +75,11 @@ def insert_df_kraken(df):
     # Create objects
     for index, row in df.iterrows():
         # access data using column names
-        if (session.query(Kraken.id).filter_by(time=row['time']).scalar()
-                is None):
+        item = session.query(Kraken).filter_by(time=row['time']).first()
+        print(item.close, item.high, item.volumeto, item.volumefrom)
+        if (item is None):
+        # if (session.query(Kraken.id).filter_by(time=row['time']).scalar()
+        #         is None):
             krk = Kraken(row['time'], row['close'], row['high'], row['low'],
                          row['open'], row['volumefrom'], row['volumeto'])
             session.add(krk)
