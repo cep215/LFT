@@ -42,6 +42,14 @@ def insert_df_aggregate(df):
             agg = Aggregate(row['time'], row['close'], row['high'], row['low'],
                             row['open'], row['volumefrom'], row['volumeto'])
             session.add(agg)
+        elif (item.close is 0 or item.high is 0 or item.low is 0 or item.open is
+        0 or item.volumefrom is 0 or item.volumeto is 0):
+            item.close = row['close']
+            item.high = row['high']
+            item.low = row['low']
+            item.open = row['open']
+            item.volumefrom = row['volumefrom']
+            item.volumeto = row['volumeto']
 
     # commit the record the database
     session.commit()
@@ -60,6 +68,14 @@ def insert_df_kraken(df):
             krk = Kraken(row['time'], row['close'], row['high'], row['low'],
                          row['open'], row['volumefrom'], row['volumeto'])
             session.add(krk)
+        elif (item.close is 0 or item.high is 0 or item.low is 0 or item.open is
+        0 or item.volumefrom is 0 or item.volumeto is 0):
+            item.close = row['close']
+            item.high = row['high']
+            item.low = row['low']
+            item.open = row['open']
+            item.volumefrom = row['volumefrom']
+            item.volumeto = row['volumeto']
 
 
     # commit the record the database
