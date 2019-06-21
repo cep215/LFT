@@ -1,10 +1,12 @@
 from sqlalchemy import *
+import os
 from sqlalchemy import create_engine, ForeignKey
 from sqlalchemy import Column, Date, Integer, String, Float, TIMESTAMP
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, backref
 
-engine = create_engine('sqlite:///data.db', echo=True)
+basedir = os.path.abspath(os.path.dirname(__file__))
+engine = create_engine('sqlite:///' + os.path.join(basedir, 'data.db'), echo=True)
 Base = declarative_base()
 
 
