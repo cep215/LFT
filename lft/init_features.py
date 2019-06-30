@@ -41,72 +41,77 @@ session = Session()
 period = np.array([4320, 1440, 360, 180, 60, 30, 15, 5, 3, 1])
 
 
-def get_btc_aggregate():
-    query = session.query(Aggregate).order_by(Aggregate.time)
-    df_aggregate = pd.read_sql(query.statement, session.bind)
-    return df_aggregate
+def get_pandas(db):
+    query = session.query(db).order_by(db.time)
+    df = pd.read_sql(query.statement, session.bind)
+    return df
 
-def get_btc_kraken():
-    query = session.query(Kraken).order_by(Kraken.time)
-    df_aggregate = pd.read_sql(query.statement, session.bind)
-    return df_aggregate
+# df_aggregate = get_pandas(Aggregate)
+# print(df_aggregate.loc[df_aggregate['time'] == '1560857220'])
 
 
-def get_avg(period, start, db):
+def get_avg(period, start, df):
     avg = 0
     for i in range(period) :
         time = str(start + i*60)
-        row = session.query(db).filter_by(time=time).first()
-        high = row.high
-        low = row.low
+        # row = session.query(df).filter_by(time=time).first()
+        row = df.loc[df['time'] == time]
+        high = row.high.tolist()[0]
+        low = row.low.tolist()[0]
         mid = (high + low) / 2
         avg += mid
 
     return avg/period
 
 
-def get_avg_price(period, timenow, db):
+
+def get_avg_price(period, timenow, df):
     p1 = math.ceil(period/24)
     p2 = math.ceil(2/3 * period/24)
-    avg_1 = get_avg(p1, timenow - period*60, db)
-    avg_2 = get_avg(p2, timenow - p2*60, db)
+    avg_1 = get_avg(p1, timenow - period*60, df)
+    avg_2 = get_avg(p2, timenow - p2*60, df)
     return  avg_1, avg_2
 
-def max_price (period, timenow, db):
+def max_price (period, timenow, df):
     max = 0
     start = timenow - period * 60
     for i in range(period) :
         time = str(start + i*60)
-        row = session.query(db).filter_by(time=time).first()
-        high = row.high
+        # row = session.query(df).filter_by(time=time).first()
+        row = df.loc[df['time'] == time]
+        high = row.high.tolist()[0]
         if(high > max):
             max = high
     return max
 
-def min_price (period, timenow, db):
+def min_price (period, timenow, df):
     start = timenow - period * 60
     time = str(start)
-    row = session.query(db).filter_by(time=time).first()
-    low = row.low
+    # row = session.query(df).filter_by(time=time).first()
+    row = df.loc[df['time'] == time]
+    low = row.low.tolist()[0]
     min = low
     for i in range(period) :
         time = str(start + i*60)
-        row = session.query(db).filter_by(time=time).first()
-        low = row.low
+        # row = session.query(df).filter_by(time=time).first()
+        row = df.loc[df['time'] == time]
+        low = row.low.tolist()[0]
         if(low < min):
             min = low
     return min
 
 
-def feature_1 (period, timenow, db):
-    avg_1, avg_2 = get_avg_price(60, timenow, db)
-    return math.log(avg_2/avg_1)
+def feature_1 (period, timenow, df):
+    avg_1, avg_2 = get_avg_price(period, timenow, df)
+    return np.log(avg_2/avg_1)
 
 
-def feature_2 (period, timenow, db):
-    max = max_price(period, timenow, db)
-    min = min_price(period, timenow, db)
+def feature_2 (period, timenow, df):
+    max = max_price(period, timenow, df)
+    min = min_price(period, timenow, df)
     # return min, max
     return (max - min)/ (max + min)
+
+
 
 
