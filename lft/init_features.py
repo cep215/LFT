@@ -10,25 +10,25 @@ import math
 from lft.db_def import Aggregate, Kraken
 
 
-def closest_time(timenow):
-    q = int(timenow / 60)
-
-    time1 = 60 * q
-
-    if ((timenow * 60) > 0):
-        time2 = (60 * (q + 1))
-    else:
-        time2 = (60 * (q - 1))
-
-    if (abs(timenow - time1) < abs(timenow - time2)):
-        return time1
-
-    return time2
-
-# # Get current time till last minute
-def timestamp_now():
-    timenow = time.time()
-    return closest_time(timenow)
+# def closest_time(timenow):
+#     q = int(timenow / 60)
+#
+#     time1 = 60 * q
+#
+#     if ((timenow * 60) > 0):
+#         time2 = (60 * (q + 1))
+#     else:
+#         time2 = (60 * (q - 1))
+#
+#     if (abs(timenow - time1) < abs(timenow - time2)):
+#         return time1
+#
+#     return time2
+#
+# # # Get current time till last minute
+# def timestamp_now():
+#     timenow = time.time()
+#     return closest_time(timenow)
 
 
 basedir = os.path.abspath(os.path.dirname(__file__))
@@ -68,13 +68,14 @@ def get_avg(period, start, df):
 def get_avg_price(period, timenow, df):
     p1 = math.ceil(period/24)
     p2 = math.ceil(2/3 * period/24)
-    avg_1 = get_avg(p1, timenow - period*60, df)
-    avg_2 = get_avg(p2, timenow - p2*60, df)
+    avg_1 = get_avg(p1, int(timenow) - period*60, df)
+    avg_2 = get_avg(p2, int(timenow) - p2*60, df)
     return  avg_1, avg_2
+
 
 def max_price (period, timenow, df):
     max = 0
-    start = timenow - period * 60
+    start = int(timenow) - period * 60
     for i in range(period) :
         time = str(start + i*60)
         # row = session.query(df).filter_by(time=time).first()
@@ -85,7 +86,7 @@ def max_price (period, timenow, df):
     return max
 
 def min_price (period, timenow, df):
-    start = timenow - period * 60
+    start = int(timenow) - period * 60
     time = str(start)
     # row = session.query(df).filter_by(time=time).first()
     row = df.loc[df['time'] == time]
@@ -101,15 +102,15 @@ def min_price (period, timenow, df):
     return min
 
 
-def feature_1 (period, timenow, df):
+def log_ret (period, timenow, df):
     avg_1, avg_2 = get_avg_price(period, timenow, df)
-    return np.log(avg_2/avg_1)
+    return math.log(avg_2/avg_1)
 
 
-def feature_2 (period, timenow, df):
+
+def true_range (period, timenow, df):
     max = max_price(period, timenow, df)
     min = min_price(period, timenow, df)
-    # return min, max
     return (max - min)/ (max + min)
 
 
