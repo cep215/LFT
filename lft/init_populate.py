@@ -5,23 +5,35 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 import pandas as pd
 
-from lft.db_def import Aggregate, Kraken
+from db_def import Aggregate, Kraken
 
 basedir = os.path.abspath(os.path.dirname(__file__))
 engine = create_engine('sqlite:///' + os.path.join(basedir, 'data.db'), echo=True)
 
+# create a SQLAlchemy ORM Session
+Session = sessionmaker(bind=engine)
+session = Session()
 
 def insert_df_aggregate(df):
 
 
     # Create objects
     for index, row in df.iterrows():
-        # access data using column names
+        # access data using column names]
         item = session.query(Aggregate).filter_by(time=row['time']).first()
         if (item is None):
+
             agg = Aggregate(row['time'], row['close'], row['high'], row['low'],
                             row['open'], row['volumefrom'], row['volumeto'])
             session.add(agg)
+            # check back in time to see if volume of transactions increased
+        elif (item.volumefrom == 0 or item.volumeto == 0):
+            item.close = row['close']
+            item.high = row['high']
+            item.low = row['low']
+            item.open = row['open']
+            item.volumefrom = row['volumefrom']
+            item.volumeto = row['volumeto']
 
     # commit the record to the database
     session.commit()
@@ -34,14 +46,23 @@ def insert_df_kraken(df):
     for index, row in df.iterrows():
         # access data using column names
         item = session.query(Kraken).filter_by(time=row['time']).first()
-        print(item.close, item.high, item.volumeto, item.volumefrom)
         if (item is None):
             krk = Kraken(row['time'], row['close'], row['high'], row['low'],
                          row['open'], row['volumefrom'], row['volumeto'])
             session.add(krk)
+        # check back in time to see if volume of transactions increased
+        elif (item.volumefrom == 0 or item.volumeto == 0):
+            item.close = row['close']
+            item.high = row['high']
+            item.low = row['low']
+            item.open = row['open']
+            item.volumefrom = row['volumefrom']
+            item.volumeto = row['volumeto']
+
 
     # commit the record to the database
     session.commit()
+
 
 
 def minute_price_historical(symbol, comparison_symbol, timestamp, exchange):
