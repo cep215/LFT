@@ -6,7 +6,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 import pandas as pd
 
-from lft.db_def import Aggregate, Kraken
+from db_def import Aggregate, Kraken
 
 basedir = os.path.abspath(os.path.dirname(__file__))
 engine = create_engine('sqlite:///' + os.path.join(basedir, 'data.db'), echo=True)
@@ -44,7 +44,7 @@ def insert_df_aggregate(df):
                             row['open'], row['volumefrom'], row['volumeto'])
             session.add(agg)
             # check back in time to see if volume of transactions increased
-        elif (item.volumefrom is 0 or item.volumeto is 0):
+        elif (item.volumefrom == 0 or item.volumeto == 0):
             item.close = row['close']
             item.high = row['high']
             item.low = row['low']
@@ -68,7 +68,7 @@ def insert_df_kraken(df):
                          row['open'], row['volumefrom'], row['volumeto'])
             session.add(krk)
         # check back in time to see if volume of transactions increased
-        elif (item.volumefrom is 0 or item.volumeto is 0):
+        elif (item.volumefrom == 0 or item.volumeto == 0):
             item.close = row['close']
             item.high = row['high']
             item.low = row['low']
