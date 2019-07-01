@@ -5,6 +5,6 @@ AWS log in:
 
 Clarifications:
 
-  volumeto  Volume in BTC traded in that particular minute.
+    volumeto  Volume in BTC traded in that particular minute.
   
-  volumeto  Volume in USD traded in that particular minute.
+    volumeto  Volume in USD traded in that particular minute.
