@@ -1,7 +1,8 @@
 # LFT
 
 AWS log in: 
-  ssh ubuntu@ec2-18-224-69-153.us-east-2.compute.amazonaws.com
+
+    ssh ubuntu@ec2-18-224-69-153.us-east-2.compute.amazonaws.com
 
 Clarifications:
 
