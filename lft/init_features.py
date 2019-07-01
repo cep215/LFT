@@ -7,28 +7,31 @@ import pandas as pd
 import numpy as np
 import time
 import math
+from twisted.internet import task, reactor
 from lft.db_def import Aggregate, Kraken
 
 
-# def closest_time(timenow):
-#     q = int(timenow / 60)
-#
-#     time1 = 60 * q
-#
-#     if ((timenow * 60) > 0):
-#         time2 = (60 * (q + 1))
-#     else:
-#         time2 = (60 * (q - 1))
-#
-#     if (abs(timenow - time1) < abs(timenow - time2)):
-#         return time1
-#
-#     return time2
-#
-# # # Get current time till last minute
-# def timestamp_now():
-#     timenow = time.time()
-#     return closest_time(timenow)
+def closest_time(timenow):
+    q = int(timenow / 60)
+
+    time1 = 60 * q
+
+    if ((timenow * 60) > 0):
+        time2 = (60 * (q + 1))
+    else:
+        time2 = (60 * (q - 1))
+
+    if (abs(timenow - time1) < abs(timenow - time2)):
+        return time1
+
+    return time2
+
+# # Get current time till last minute
+def timestamp_now():
+    timenow = time.time()
+    return closest_time(timenow)
+
+
 
 
 basedir = os.path.abspath(os.path.dirname(__file__))
@@ -38,7 +41,7 @@ engine = create_engine('sqlite:///' + os.path.join(basedir, 'data.db'), echo=Tru
 Session = sessionmaker(bind=engine)
 session = Session()
 
-period = np.array([4320, 1440, 360, 180, 60, 30, 15, 5, 3, 1])
+period_list = np.array([4320, 1440, 360, 180, 60, 30, 15, 5, 3, 1])
 
 
 def get_pandas(db):
@@ -112,6 +115,15 @@ def true_range (period, timenow, df):
     max = max_price(period, timenow, df)
     min = min_price(period, timenow, df)
     return (max - min)/ (max + min)
+
+
+
+def get_df_until (df, timestamp):
+    for index, row in df.iterrows():
+        if int(row['time']) >= int(timestamp) :
+            df.drop(index, inplace=True)
+    return df
+
 
 
 
