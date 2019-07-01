@@ -118,11 +118,6 @@ def true_range (period, timenow, df):
 
 
 
-def get_df_until (df, timestamp):
-    for index, row in df.iterrows():
-        if int(row['time']) >= int(timestamp) :
-            df.drop(index, inplace=True)
-    return df
 
 
 
