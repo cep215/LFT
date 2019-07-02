@@ -4,6 +4,9 @@ import datetime
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 import pandas as pd
+pd.set_option('display.max_rows', 500)
+pd.set_option('display.max_columns', 500)
+pd.set_option('display.width', 1000)
 import numpy as np
 import time
 import math
@@ -53,12 +56,11 @@ df = get_pandas(Aggregate)
 # print(df_aggregate.loc[df_aggregate['time'] == '1560857220'])
 
 
-
-
-
-
 ### Calculate ema for different spans
-df['ema_20'] = df.volumeto.ewm(span = 20, adjust = False).mean()
+for period in period_list:
+    df['ema_'+str(period)] = df.volumeto.ewm(span = period, adjust =
+    False).mean()
+
 
 ### Calculate returns on different periods
 for period in period_list:
@@ -104,4 +106,5 @@ def log_ret(period, index, df):
 
 
 
-print(log_ret(3, 2000, df))
+#print(log_ret(3, 2000, df))
+print(df.head(50))
