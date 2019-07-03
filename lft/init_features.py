@@ -57,8 +57,9 @@ df = get_pandas(Aggregate)
 
 
 ### Calculate ema for different spans
+# alpha = 0.01
 for period in period_list:
-    df['ema_'+str(period)] = df.volumeto.ewm(span = period, adjust =
+    df['ema_'+str(period)] = df.volumeto.ewm(halflife=period, adjust =
     False).mean()
 
 
@@ -102,9 +103,11 @@ def log_ret(period, index, df):
 # for period in period_list:
 #     df['log_ret_'+str(period)] = 0
 #     for i in df.index:
+#
+#
 #         df.at[i, 'log_ret_'+str(period)] = log_ret(period, i, df)
 
 
 
 #print(log_ret(3, 2000, df))
-print(df.head(50))
+print(df[['ema_3','ema_60', 'volumeto']].tail(100))
