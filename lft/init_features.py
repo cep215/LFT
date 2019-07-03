@@ -4,9 +4,6 @@ import datetime
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 import pandas as pd
-pd.set_option('display.max_rows', 500)
-pd.set_option('display.max_columns', 500)
-pd.set_option('display.width', 1000)
 import numpy as np
 import time
 import math
@@ -56,6 +53,7 @@ df = get_pandas(Aggregate)
 # print(df_aggregate.loc[df_aggregate['time'] == '1560857220'])
 
 
+
 ### Calculate ema for different spans
 # alpha = 0.01
 for period in period_list:
@@ -63,15 +61,17 @@ for period in period_list:
     False).mean()
 
 
-### Calculate returns on different periods
-for period in period_list:
-    df['returns_'+str(period)] = df['close'].pct_change(periods=period)
+
 
 ### Calculate feature true_range = (max-min)/(max+min) for different periods
 for period in period_list:
     min = df['low'].rolling(window=period).min()
     max = df['high'].rolling(window=period).max()
     df['true_range_'+str(period)] = (max-min)/(max+min)
+
+
+
+
 
 ### Calculate feature log(1 + %returns) ###
 
@@ -109,5 +109,39 @@ def log_ret(period, index, df):
 
 
 
+
 #print(log_ret(3, 2000, df))
 print(df[['ema_3','ema_60', 'volumeto']].tail(100))
+
+
+
+### Calculate feature rel_volume_returns
+for period in period_list:
+    # Calculate ema for different spans
+    df['ema_volume_'+str(period)] = df.volumeto.ewm(span=period, adjust=False).mean()
+
+    # Calculate returns on different periods
+    df['returns_' + str(period)] = df['close'].pct_change(periods=period)
+
+    df['rel_volume_returns_'+str(period)] = df['volumeto']/df['ema_volume_'+str(period)]*df['returns_'+str(period)]
+
+
+
+
+### Calculate std_returns
+for period in period_list:
+    df['std_returns_'+str(period)] = df['returns_'+str(period)].rolling(window=period).std()
+
+
+
+### Calculate Bollinger Bands
+for period in period_list:
+    df['ema_close_'+str(period)] = df.close.ewm(span=period, adjust=False).mean()
+    df['std_close_'+str(period)] = df['close'].rolling(window=period).std()
+
+    df['lower_bb_'+str(period)] = df['ema_close_'+str(period)] - 2*df['std_close_'+str(period)]
+    df['upper_bb_'+str(period)] = df['ema_close_'+str(period)] + 2*df['std_close_'+str(period)]
+
+
+print(df[['lower_bb_60', 'close','upper_bb_60']].tail(100))
+
