@@ -18,7 +18,7 @@ session = Session()
 
 def minute_price_historical(symbol, comparison_symbol, exchange):
     url = 'https://min-api.cryptocompare.com/data/histominute?fsym={}&tsym={' \
-          '}&limit=10'\
+          '}&limit=5'\
             .format(symbol.upper(), comparison_symbol.upper())
     if exchange:
         url += '&e={}'.format(exchange)
@@ -44,7 +44,7 @@ def insert_df_aggregate(df):
                             row['open'], row['volumefrom'], row['volumeto'])
             session.add(agg)
             # check back in time to see if volume of transactions increased
-        elif (item.volumefrom == 0 or item.volumeto == 0):
+        else:
             item.close = row['close']
             item.high = row['high']
             item.low = row['low']
@@ -54,6 +54,7 @@ def insert_df_aggregate(df):
 
     # commit the record to the database
     session.commit()
+
 
 
 def insert_df_kraken(df):
@@ -68,7 +69,7 @@ def insert_df_kraken(df):
                          row['open'], row['volumefrom'], row['volumeto'])
             session.add(krk)
         # check back in time to see if volume of transactions increased
-        elif (item.volumefrom == 0 or item.volumeto == 0):
+        else:
             item.close = row['close']
             item.high = row['high']
             item.low = row['low']

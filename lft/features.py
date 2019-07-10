@@ -1,31 +1,45 @@
+import math
 import time
 import pandas as pd
 import requests
 import numpy as np
 
 
-from lft.init_features import create_past_df, log_ret
+from lft.init_features import create_past_df
 from lft.db_def import Aggregate, Kraken
+
+pd.set_option('display.max_rows', 5000)
+
 
 period_list = np.array([4320, 1440, 360, 180, 60, 30, 15, 5, 3])
 
 alpha = 0.01
 
-
-def closest_time(timenow):
-    q = int(timenow / 60)
-    time1 = 60 * q
-    if ((timenow * 60) > 0):
-        time2 = (60 * (q + 1))
+def get_avg(df, start, period):
+    avg = df['avg'].iloc[(start - period):start].mean(axis=0)
+    if (period != 0):
+        return avg
     else:
-        time2 = (60 * (q - 1))
-    if (abs(timenow - time1) < abs(timenow - time2)):
-        return time1
-    return time2
+        return 1
 
-def get_timestamp_now():
-    timenow = time.time()
-    return closest_time(timenow)
+def log_ret(df, period, index):
+
+    p1 = math.ceil(period / 24)
+    p2 = math.ceil(2 / 3 * period / 24)
+    avg_1 = get_avg(df, index - period, p1)
+    avg_2 = get_avg(df, index - p2, p2)
+
+    if (avg_1 != 0):
+        return math.log(avg_2/avg_1)
+
+def avg_ret(df, period, index):
+
+    p1 = math.ceil(period / 24)
+    p2 = math.ceil(2 / 3 * period / 24)
+    avg_1 = get_avg(df, index - period, p1)
+    avg_2 = get_avg(df, index - p2, p2)
+    if (avg_1 != 0):
+        return (avg_2 - avg_1)/avg_1
 
 #########################################################
 df = create_past_df(Aggregate).iloc[-4500:]
@@ -34,10 +48,8 @@ df = df.convert_objects(convert_numeric=True)
 
 
 # Returns dataframe containing last 10 minutes of data (from cryptocompare api)
-def get_last_record(symbol, comparison_symbol, timestamp, exchange):
+def get_last_record(symbol, comparison_symbol, exchange):
     url = 'https://min-api.cryptocompare.com/data/histominute?fsym={}&tsym={}&limit=10'.format(symbol.upper(), comparison_symbol.upper())
-    if timestamp:
-        url += '&toTs={}'.format(timestamp)
     if exchange:
         url += '&e={}'.format(exchange)
     page = requests.get(url)
@@ -67,7 +79,7 @@ def update_volume (df_to, df_from, index):
 
 # Returns old dataframe concatanated with new dataframe
 def update_df(df, index, symbol, comparison_symbol, exchange):
-    df_to_update = get_last_record(symbol, comparison_symbol, get_timestamp_now(), exchange)
+    df_to_update = get_last_record(symbol, comparison_symbol, exchange)
 
     df = update_volume(df, df_to_update, index)
 
@@ -84,8 +96,7 @@ def update_df_features(df, index, symbol, comparison_symbol, exchange):
 
     ### Calculate log_ret
     for period in period_list:
-        df['log_ret_'+str(period)].iloc[index] = 0
-        df['log_ret_' + str(period)].iloc[index] = log_ret(period, df.index[index], df)
+        df['log_ret_' + str(period)].iloc[index] = log_ret(df, period, index)
 
 
 
@@ -104,7 +115,8 @@ def update_df_features(df, index, symbol, comparison_symbol, exchange):
 
         # Calculate returns on different periods
         # df['returns_' + str(period)].iloc[index] = df['close'].pct_change(periods=period)
-        df['returns_' + str(period)].iloc[index] = (df['close'].iloc[index] - df['close'].iloc[-period + index]) / df['close'].iloc[-period + index]
+        df['returns_'+str(period)].iloc[index] = avg_ret(df, period, index)
+        # df['returns_' + str(period)].iloc[index] = (df['close'].iloc[index] - df['close'].iloc[index - period]) / df['close'].iloc[index-period]
 
         df['rel_volume_returns_' + str(period)].iloc[index] = df['volumeto'].iloc[index] / df['ema_volume_' + str(
             period)].iloc[index] * df['returns_' + str(period)].iloc[index]
@@ -128,14 +140,40 @@ def update_df_features(df, index, symbol, comparison_symbol, exchange):
 starttime=time.time()
 
 
-for i in range (-10, 0):
+for i in range (-2, 0):
     df = update_df_features(df, i, 'BTC', 'USD', '')
 
 while True:
-  df = update_df_features(df, -1, 'BTC', 'USD', '')
-  df = df.iloc[1:]
-  print(df[['time', 'close', 'volumeto', 'ema_volume_3']])
-  time.sleep(60.0 - ((time.time() - starttime) % 60.0))
+    df = update_df_features(df, -1, 'BTC', 'USD', '')
+    df = df.iloc[1:]
+    print(df[['time', 'open', 'close', 'high', 'low', 'volumeto', 'volumefrom',
+              'ema_volume_5',
+              'ema_close_5',
+              'log_ret_5',
+              'true_range_5',
+              'rel_volume_returns_5',
+              'std_close_5',
+              'returns_5',
+              'std_returns_5',
+              'lower_bb_5',
+              'upper_bb_5']],
+          file=open("output.txt", "a"))
+    print('\n\n\n\n\n\n\n',
+          file=open("output.txt", "a"))
+    print(df[['time', 'open', 'close', 'high', 'low', 'volumeto', 'volumefrom',
+            'ema_volume_4320',
+            'ema_close_4320',
+            'log_ret_4320',
+            'true_range_4320',
+            'rel_volume_returns_4320',
+            'std_close_4320',
+            'returns_4320',
+            'std_returns_4320',
+            'lower_bb_4320',
+            'upper_bb_4320']],
+        file=open("output.txt", "a"))
+
+    time.sleep(60.0 - ((time.time() - starttime) % 60.0))
 
 
 

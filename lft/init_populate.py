@@ -26,14 +26,7 @@ def insert_df_aggregate(df):
             agg = Aggregate(row['time'], row['close'], row['high'], row['low'],
                             row['open'], row['volumefrom'], row['volumeto'])
             session.add(agg)
-            # check back in time to see if volume of transactions increased
-        elif (item.volumefrom == 0 or item.volumeto == 0):
-            item.close = row['close']
-            item.high = row['high']
-            item.low = row['low']
-            item.open = row['open']
-            item.volumefrom = row['volumefrom']
-            item.volumeto = row['volumeto']
+
 
     # commit the record to the database
     session.commit()
@@ -50,15 +43,6 @@ def insert_df_kraken(df):
             krk = Kraken(row['time'], row['close'], row['high'], row['low'],
                          row['open'], row['volumefrom'], row['volumeto'])
             session.add(krk)
-        # check back in time to see if volume of transactions increased
-        elif (item.volumefrom == 0 or item.volumeto == 0):
-            item.close = row['close']
-            item.high = row['high']
-            item.low = row['low']
-            item.open = row['open']
-            item.volumefrom = row['volumefrom']
-            item.volumeto = row['volumeto']
-
 
     # commit the record to the database
     session.commit()
@@ -81,6 +65,7 @@ def minute_price_historical(symbol, comparison_symbol, timestamp, exchange):
         return df
     else:
         return None
+
 
 
 def get_last_aggregate():
@@ -107,3 +92,4 @@ def populate():
 
 
 populate()
+

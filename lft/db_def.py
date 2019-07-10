@@ -23,9 +23,12 @@ class Aggregate(Base):
     open = Column(Float)
     volumefrom = Column(Float)
     volumeto = Column(Float)
+    from_currency = Column(String, default='BTC')
+    to_currency = Column(String, default='USD')
+    exchange = Column(String, default='CCCAG')
 
     # ----------------------------------------------------------------------
-    def __init__(self, time, close, high, low, open, volumefrom, volumeto):
+    def __init__(self, time, close, high, low, open, volumefrom, volumeto, from_currency = 'BTC', to_currency = 'USD', exchange = 'CCCAG'):
         """"""
         self.time = time
         self.close = close
@@ -34,6 +37,9 @@ class Aggregate(Base):
         self.open = open
         self.volumefrom = volumefrom
         self.volumeto = volumeto
+        self.from_currency = from_currency
+        self.to_currency = to_currency
+        self.exchange = exchange
 
 class Kraken(Base):
     """"""
@@ -47,9 +53,12 @@ class Kraken(Base):
     open = Column(Float)
     volumefrom = Column(Float)
     volumeto = Column(Float)
+    from_currency = Column(String, default='BTC')
+    to_currency = Column(String, default='USD')
+    exchange = Column(String, default='kraken')
 
     # ----------------------------------------------------------------------
-    def __init__(self, time, close, high, low, open, volumefrom, volumeto):
+    def __init__(self, time, close, high, low, open, volumefrom, volumeto, from_currency = 'BTC', to_currency = 'USD', exchange = 'kraken'):
         """"""
         self.time = time
         self.close = close
@@ -58,6 +67,9 @@ class Kraken(Base):
         self.open = open
         self.volumefrom = volumefrom
         self.volumeto = volumeto
+        self.from_currency = from_currency
+        self.to_currency = to_currency
+        self.exchange = exchange
 
 
 # create tables

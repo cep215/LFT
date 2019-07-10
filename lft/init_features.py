@@ -36,13 +36,13 @@ def get_pandas(db):
 def get_avg(df, start, period):
     avg = df['avg'].iloc[start:(start + period)].mean(axis=0)
     if (period != 0):
-        return avg / period
+        return avg
     else:
         return 1
 
 
 # Calculate log_ret for a period
-def log_ret(period, index, df):
+def log_ret(df, period, index):
 
     p1 = math.ceil(period / 24)
     p2 = math.ceil(2 / 3 * period / 24)
@@ -55,6 +55,25 @@ def log_ret(period, index, df):
 
     if (avg_1 != 0):
         return math.log(avg_2/avg_1)
+    else:
+        return 0
+
+def avg_ret(df, period, index):
+
+    p1 = math.ceil(period / 24)
+    p2 = math.ceil(2 / 3 * period / 24)
+    if (index - period > 0):
+        avg_1 = get_avg(df, index - period, p1)
+        avg_2 = get_avg(df, index - p2, p2)
+    else:
+        avg_1 = 1
+        avg_2 = 1
+    if (avg_1 != 0):
+        return (avg_2 - avg_1)/avg_1
+    else :
+        return 0
+
+
 
 def create_past_df(db):
 
@@ -67,8 +86,7 @@ def create_past_df(db):
     # alpha = 0.01
 
     for period in period_list:
-        df['ema_'+ str(period)] = df.volumeto.ewm(halflife=period, adjust =
-        False).mean()
+        df['ema_'+ str(period)] = df.volumeto.ewm(halflife=period, adjust =False).mean()
 
 
 
@@ -89,17 +107,15 @@ def create_past_df(db):
 
 
 
-
-
-
     # Populate df with log_ret_period
     for period in period_list:
         df['log_ret_'+str(period)] = 0
-        v = np.vectorize(log_ret)
+        logret = np.vectorize(log_ret)
         #do not vectorize on df
-        v.excluded.add(2)
-        df['log_ret_' + str(period)] = v(period, df.index, df)
+        logret.excluded.add(0)
+        df['log_ret_' + str(period)] = logret(df, period, df.index)
 
+    # print(log_ret(4320, 5000, df))
 
 
     # print(log_ret(15, 2003))
@@ -114,7 +130,9 @@ def create_past_df(db):
         df['ema_volume_'+str(period)] = df.volumeto.ewm(halflife=period, adjust=False).mean()
 
         # Calculate returns on different periods
-        df['returns_' + str(period)] = df['close'].pct_change(periods=period)
+        avgret = np.vectorize(avg_ret)
+        avgret.excluded(0)
+        df['returns_' + str(period)] = avgret(df, period, df.index)
 
         df['rel_volume_returns_'+str(period)] = df['volumeto']/df['ema_volume_'+str(period)]*df['returns_'+str(period)]
 
@@ -141,6 +159,6 @@ def create_past_df(db):
     return df
 
 
-# print(create_past_df(Aggregate))
+# create_past_df(Aggregate)
 
 
