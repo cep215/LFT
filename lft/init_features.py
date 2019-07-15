@@ -48,7 +48,7 @@ def log_ret(df, period, index):
     p2 = math.ceil(2 / 3 * period / 24)
     if (index - period > 0):
         avg_1 = get_avg(df, index - period, p1)
-        avg_2 = get_avg(df, index - p2, p2)
+        avg_2 = get_avg(df, index - p2 + 1, p2 + 1)
     else:
         avg_1 = 1
         avg_2 = 1
@@ -64,7 +64,8 @@ def avg_ret(df, period, index):
     p2 = math.ceil(2 / 3 * period / 24)
     if (index - period > 0):
         avg_1 = get_avg(df, index - period, p1)
-        avg_2 = get_avg(df, index - p2, p2)
+        avg_2 = get_avg(df, index - p2 + 1, p2 + 1)
+        # print(avg_1, avg_2)
     else:
         avg_1 = 1
         avg_2 = 1
@@ -107,7 +108,7 @@ def create_past_df(db):
 
 
 
-    # Populate df with log_ret_period
+    #Populate df with log_ret_period
     for period in period_list:
         df['log_ret_'+str(period)] = 0
         logret = np.vectorize(log_ret)
@@ -131,7 +132,7 @@ def create_past_df(db):
 
         # Calculate returns on different periods
         avgret = np.vectorize(avg_ret)
-        avgret.excluded(0)
+        avgret.excluded.add(0)
         df['returns_' + str(period)] = avgret(df, period, df.index)
 
         df['rel_volume_returns_'+str(period)] = df['volumeto']/df['ema_volume_'+str(period)]*df['returns_'+str(period)]
@@ -156,9 +157,15 @@ def create_past_df(db):
 
     # print(df[['lower_bb_60', 'close','upper_bb_60']].tail(100))
 
+    # print(df['high'].iloc[5000], df['low'].iloc[5000], df['avg'].iloc[5000])
+    # print(df['high'].iloc[5004], df['low'].iloc[5004], df['avg'].iloc[5004])
+    # print(df['high'].iloc[5005], df['low'].iloc[5005], df['avg'].iloc[5005])
+    # print(df['high'].iloc[5006], df['low'].iloc[5006], df['avg'].iloc[5006])
+
+    # avg_ret(df, 5, 5005)
+    # print(avg_ret(df, 5, 5005))
+    # print(df['returns_5'].iloc[5005])
+
     return df
-
-
-# create_past_df(Aggregate)
 
 
