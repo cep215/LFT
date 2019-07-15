@@ -45,18 +45,6 @@ alpha = 0.01
 df = create_past_df(Aggregate).iloc[-20:]
 df = df.convert_objects(convert_numeric=True)
 #########################################################
-print(df[['time', 'open', 'close', 'high', 'low', 'volumeto', 'volumefrom',
-              'ema_volume_5',
-              'ema_close_5',
-              'log_ret_5',
-              'true_range_5',
-              'rel_volume_returns_5',
-              'std_close_5',
-              'returns_5',
-              'std_returns_5',
-              'lower_bb_5',
-              'upper_bb_5']],
-          file=open("output.txt", "a"))
 
 
 # Returns dataframe containing last 10 minutes of data (from cryptocompare api)
@@ -67,6 +55,7 @@ def get_last_record(symbol, comparison_symbol, exchange):
     page = requests.get(url)
     data = page.json()['Data']
     df = pd.DataFrame(data)
+    df['time'] = df['time'].astype(np.int64)
 
     if not df.empty:
         return df
@@ -77,13 +66,14 @@ def get_last_record(symbol, comparison_symbol, exchange):
 
 def update_pricevol (df, df_update):
     for index, row in df_update.iterrows():
-        if(row.time in df.time):
+        if not df.loc[df['time'] == row.time].empty:
             df.loc[df['time'] == row.time].volumeto = row.volumeto
             df.loc[df['time'] == row.time].volumefrom = row.volumefrom
             df.loc[df['time'] == row.time].close = row.close
             df.loc[df['time'] == row.time].high = row.high
             df.loc[df['time'] == row.time].low = row.low
             df.loc[df['time'] == row.time].open = row.open
+
         else:
             df = df.append(row, ignore_index = True)
     return df
@@ -91,25 +81,10 @@ def update_pricevol (df, df_update):
 # Returns old dataframe concatanated with new dataframe
 def update_df(df, symbol, comparison_symbol, exchange):
     df_update = get_last_record(symbol, comparison_symbol, exchange)
-    print("DF update", df_update[['time', 'open', 'close', 'high', 'low', 'volumeto', 'volumefrom']],
-          file=open("output.txt", "a"))
 
     df = update_pricevol(df, df_update)
-    print("Update price vol", df[['time', 'open', 'close', 'high', 'low', 'volumeto', 'volumefrom',
-              'ema_volume_5',
-              'ema_close_5',
-              'log_ret_5',
-              'true_range_5',
-              'rel_volume_returns_5',
-              'std_close_5',
-              'returns_5',
-              'std_returns_5',
-              'lower_bb_5',
-              'upper_bb_5']],
-          file=open("output.txt", "a"))
 
     # df_res = pd.concat([df, df_update]).drop_duplicates(subset='time', keep = 'first').reset_index(drop=True)
-    # print(df_res[['time', 'close', 'volumeto', 'ema_3']])
 
     return df
 
@@ -118,41 +93,14 @@ def update_df(df, symbol, comparison_symbol, exchange):
 def update_df_features(df, symbol, comparison_symbol, exchange):
     df = update_df(df, symbol, comparison_symbol, exchange)
 
-    print(df[['time', 'open', 'close', 'high', 'low', 'volumeto', 'volumefrom',
-              'ema_volume_5',
-              'ema_close_5',
-              'log_ret_5',
-              'true_range_5',
-              'rel_volume_returns_5',
-              'std_close_5',
-              'returns_5',
-              'std_returns_5',
-              'lower_bb_5',
-              'upper_bb_5']],
-          file=open("output.txt", "a"))
-
 
     index = df[df['avg'].isnull()].index
-    print(index)
 
     for i in index:
         ### Calculate log_ret
         df['avg'].iloc[i] = (df['low'].iloc[i] + df['high'].iloc[i]) / 2
         for period in period_list:
             df['log_ret_' + str(period)].iloc[i] = log_ret(df, period, i)
-            if(period == 5):
-                print("log_ret", period, i, "\n", df[['time', 'open', 'close', 'high', 'low', 'volumeto', 'volumefrom',
-                  'ema_volume_5',
-                  'ema_close_5',
-                  'log_ret_5',
-                  'true_range_5',
-                  'rel_volume_returns_5',
-                  'std_close_5',
-                  'returns_5',
-                  'std_returns_5',
-                  'lower_bb_5',
-                  'upper_bb_5']],
-              file=open("output.txt", "a"))
 
 
 
@@ -163,77 +111,24 @@ def update_df_features(df, symbol, comparison_symbol, exchange):
             # max = df['high'].rolling(window=period).max()
             max = np.max(df['high'].iloc[(i - period) : i])
             df['true_range_' + str(period)].iloc[i] = (max - min) / (max + min)
-            if (period == 5):
-                print("true_range", period, i, "\n", df[['time', 'open', 'close', 'high', 'low', 'volumeto', 'volumefrom',
-                  'ema_volume_5',
-                  'ema_close_5',
-                  'log_ret_5',
-                  'true_range_5',
-                  'rel_volume_returns_5',
-                  'std_close_5',
-                  'returns_5',
-                  'std_returns_5',
-                  'lower_bb_5',
-                  'upper_bb_5']],
-              file=open("output.txt", "a"))
 
         ### Calculate feature rel_volume_returns
         for period in period_list:
             # Calculate ema for different spans
             df['ema_volume_' + str(period)].iloc[i] = alpha * df['volumeto'].iloc[i] + (1-alpha) * df['ema_volume_'+ str(period)].iloc[i - 1]
-            if (period == 5):
-                print("ema_volume", period, i, "\n", df[['time', 'open', 'close', 'high', 'low', 'volumeto', 'volumefrom',
-                  'ema_volume_5',
-                  'ema_close_5',
-                  'log_ret_5',
-                  'true_range_5',
-                  'rel_volume_returns_5',
-                  'std_close_5',
-                  'returns_5',
-                  'std_returns_5',
-                  'lower_bb_5',
-                  'upper_bb_5']],
-              file=open("output.txt", "a"))
 
             # Calculate returns on different periods
             # df['returns_' + str(period)].iloc[i] = df['close'].pct_change(periods=period)
-            print(avg_ret(df, period, i))
             df['returns_'+str(period)].iloc[i] = avg_ret(df, period, i)
             # df['returns_' + str(period)].iloc[i] = (df['close'].iloc[i] - df['close'].iloc[i - period]) / df['close'].iloc[i-period]
 
             df['rel_volume_returns_' + str(period)].iloc[i] = df['volumeto'].iloc[i] / df['ema_volume_' + str(
                 period)].iloc[i] * df['returns_' + str(period)].iloc[i]
-            if (period == 5):
-                print("rel_vol_returns", period, i, "\n", df[['time', 'open', 'close', 'high', 'low', 'volumeto', 'volumefrom',
-                  'ema_volume_5',
-                  'ema_close_5',
-                  'log_ret_5',
-                  'true_range_5',
-                  'rel_volume_returns_5',
-                  'std_close_5',
-                  'returns_5',
-                  'std_returns_5',
-                  'lower_bb_5',
-                  'upper_bb_5']],
-              file=open("output.txt", "a"))
 
         ### Calculate std_returns
         for period in period_list:
             # df['std_returns_' + str(period)].iloc[index] = df['returns_' + str(period)].rolling(window=period).std()
             df['std_returns_' + str(period)].iloc[i] = np.std(df['returns_' + str(period)].iloc[(i - period) : i])
-            if (period == 5):
-                print("std_returns", period, i, "\n", df[['time', 'open', 'close', 'high', 'low', 'volumeto', 'volumefrom',
-                  'ema_volume_5',
-                  'ema_close_5',
-                  'log_ret_5',
-                  'true_range_5',
-                  'rel_volume_returns_5',
-                  'std_close_5',
-                  'returns_5',
-                  'std_returns_5',
-                  'lower_bb_5',
-                  'upper_bb_5']],
-              file=open("output.txt", "a"))
 
         ### Calculate Bollinger Bands
         for period in period_list:
@@ -243,20 +138,6 @@ def update_df_features(df, symbol, comparison_symbol, exchange):
 
             df['lower_bb_' + str(period)].iloc[i] = df['ema_close_' + str(period)].iloc[i] - 2 * df['std_close_' + str(period)].iloc[i]
             df['upper_bb_' + str(period)].iloc[i] = df['ema_close_' + str(period)].iloc[i] + 2 * df['std_close_' + str(period)].iloc[i]
-
-            if (period == 5):
-                print("bb", period, i, "\n", df[['time', 'open', 'close', 'high', 'low', 'volumeto', 'volumefrom',
-                  'ema_volume_5',
-                  'ema_close_5',
-                  'log_ret_5',
-                  'true_range_5',
-                  'rel_volume_returns_5',
-                  'std_close_5',
-                  'returns_5',
-                  'std_returns_5',
-                  'lower_bb_5',
-                  'upper_bb_5']],
-              file=open("output.txt", "a"))
 
 
     return df
@@ -280,6 +161,7 @@ while True:
           'upper_bb_5']],
           file = open("output.txt", "a"))
     df = df.iloc[1:]
+
     # print('\n\n\n\n\n\n\n',
     #       file=open("output.txt", "a"))
     # print(df[['time', 'open', 'close', 'high', 'low', 'volumeto', 'volumefrom',
