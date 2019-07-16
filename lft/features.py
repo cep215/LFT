@@ -67,12 +67,12 @@ def get_last_record(symbol, comparison_symbol, exchange):
 def update_pricevol (df, df_update):
     for index, row in df_update.iterrows():
         if not df.loc[df['time'] == row.time].empty:
-            df.loc[df['time'] == row.time].volumeto = row.volumeto
-            df.loc[df['time'] == row.time].volumefrom = row.volumefrom
-            df.loc[df['time'] == row.time].close = row.close
-            df.loc[df['time'] == row.time].high = row.high
-            df.loc[df['time'] == row.time].low = row.low
-            df.loc[df['time'] == row.time].open = row.open
+            df["volumeto"].loc[df['time'] == row.time] = row.volumeto
+            df["volumefrom"].loc[df['time'] == row.time] = row.volumefrom
+            df["close"].loc[df['time'] == row.time] = row.close
+            df["high"].loc[df['time'] == row.time] = row.high
+            df["low"].loc[df['time'] == row.time]= row.low
+            df["open"].loc[df['time'] == row.time] = row.open
 
         else:
             df = df.append(row, ignore_index = True)
