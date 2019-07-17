@@ -157,14 +157,14 @@ def create_past_df(db):
 
     # print(df[['lower_bb_60', 'close','upper_bb_60']].tail(100))
 
-    print(df['high'].iloc[5000], df['low'].iloc[5000], df['avg'].iloc[5000])
-    print(df['high'].iloc[5060], df['low'].iloc[5060], df['avg'].iloc[5060])
-
-    avg_ret(df, 60, 5060)
-    print(avg_ret(df, 60, 5060))
-    print(df['returns_5'].iloc[5060])
+    # print(df['high'].iloc[5000], df['low'].iloc[5000], df['avg'].iloc[5000])
+    # print(df['high'].iloc[5005], df['low'].iloc[5005], df['avg'].iloc[5005])
+    #
+    # avg_ret(df, 5, 5005)
+    # print(avg_ret(df, 5, 5005))
+    # print(df['returns_5'].iloc[5005])
 
     return df
 
 
-create_past_df(Aggregate)
+# create_past_df(Aggregate)

@@ -107,9 +107,9 @@ def update_df_features(df, symbol, comparison_symbol, exchange):
         ### Calculate feature true_range = (max-min)/(max+min) for different periods
         for period in period_list:
             # min = df['low'].rolling(window=period).min()
-            min = np.min(df['low'].iloc[(i - period) : i])
+            min = np.min(df['low'].iloc[(i - period) : i + 1])
             # max = df['high'].rolling(window=period).max()
-            max = np.max(df['high'].iloc[(i - period) : i])
+            max = np.max(df['high'].iloc[(i - period) : i + 1])
             df['true_range_' + str(period)].iloc[i] = (max - min) / (max + min)
 
         ### Calculate feature rel_volume_returns
@@ -128,13 +128,13 @@ def update_df_features(df, symbol, comparison_symbol, exchange):
         ### Calculate std_returns
         for period in period_list:
             # df['std_returns_' + str(period)].iloc[index] = df['returns_' + str(period)].rolling(window=period).std()
-            df['std_returns_' + str(period)].iloc[i] = np.std(df['returns_' + str(period)].iloc[(i - period) : i])
+            df['std_returns_' + str(period)].iloc[i] = np.std(df['returns_' + str(period)].iloc[(i - period) : i + 1])
 
         ### Calculate Bollinger Bands
         for period in period_list:
             df['ema_close_' + str(period)].iloc[i] = alpha * df['close'].iloc[i] + (1-alpha) * df['ema_close_'+ str(period)].iloc[i - 1]
             # df['std_close_' + str(period)].iloc[index] = df['close'].rolling(window=period).std()
-            df['std_close_' + str(period)].iloc[i] = np.std(df['close'].iloc[(i - period) : i])
+            df['std_close_' + str(period)].iloc[i] = np.std(df['close'].iloc[(i - period) : i + 1])
 
             df['lower_bb_' + str(period)].iloc[i] = df['ema_close_' + str(period)].iloc[i] - 2 * df['std_close_' + str(period)].iloc[i]
             df['upper_bb_' + str(period)].iloc[i] = df['ema_close_' + str(period)].iloc[i] + 2 * df['std_close_' + str(period)].iloc[i]
