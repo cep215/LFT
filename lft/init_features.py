@@ -48,7 +48,7 @@ def log_ret(df, period, index):
     p2 = math.ceil(2 / 3 * period / 24)
     if (index - period > 0):
         avg_1 = get_avg(df, index - period, p1)
-        avg_2 = get_avg(df, index - p2 + 1, p2 + 1)
+        avg_2 = get_avg(df, index - p2 + 1, p2)
     else:
         avg_1 = 1
         avg_2 = 1
@@ -64,7 +64,7 @@ def avg_ret(df, period, index):
     p2 = math.ceil(2 / 3 * period / 24)
     if (index - period > 0):
         avg_1 = get_avg(df, index - period, p1)
-        avg_2 = get_avg(df, index - p2 + 1, p2 + 1)
+        avg_2 = get_avg(df, index - p2 + 1, p2)
         # print(avg_1, avg_2)
     else:
         avg_1 = 1
@@ -157,15 +157,14 @@ def create_past_df(db):
 
     # print(df[['lower_bb_60', 'close','upper_bb_60']].tail(100))
 
-    # print(df['high'].iloc[5000], df['low'].iloc[5000], df['avg'].iloc[5000])
-    # print(df['high'].iloc[5004], df['low'].iloc[5004], df['avg'].iloc[5004])
-    # print(df['high'].iloc[5005], df['low'].iloc[5005], df['avg'].iloc[5005])
-    # print(df['high'].iloc[5006], df['low'].iloc[5006], df['avg'].iloc[5006])
+    print(df['high'].iloc[5000], df['low'].iloc[5000], df['avg'].iloc[5000])
+    print(df['high'].iloc[5060], df['low'].iloc[5060], df['avg'].iloc[5060])
 
-    # avg_ret(df, 5, 5005)
-    # print(avg_ret(df, 5, 5005))
-    # print(df['returns_5'].iloc[5005])
+    avg_ret(df, 60, 5060)
+    print(avg_ret(df, 60, 5060))
+    print(df['returns_5'].iloc[5060])
 
     return df
 
 
+create_past_df(Aggregate)
