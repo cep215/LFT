@@ -24,6 +24,7 @@ Session = sessionmaker(bind=engine)
 session = Session()
 
 period_list = np.array([4320, 1440, 360, 180, 60, 30, 15, 5, 3])
+target_period_list = np.array([360, 300, 240, 180, 120, 60, 30, 15, 10, 5, 3])
 
 
 def get_pandas(db):
@@ -81,15 +82,18 @@ def create_past_df(db):
     df = get_pandas(Aggregate)
     # print(df.loc[df_aggregate['time'] == '1560857220'])
 
-
+    ### Calculate min and max target price
+    for period in target_period_list:
+        min = df[::-1]['low'].rolling(window=period).min().shift()
+        df['min_target_' + str(period)] = min
+        max = df[::-1]['high'].rolling(window=period).max().shift()
+        df['max_target_' + str(period)] = max
 
     ### Calculate ema for different spans
     # alpha = 0.01
 
     for period in period_list:
         df['ema_'+ str(period)] = df.volumeto.ewm(halflife=period, adjust =False).mean()
-
-
 
 
     ### Calculate feature true_range = (max-min)/(max+min) for different periods
@@ -166,5 +170,5 @@ def create_past_df(db):
 
     return df
 
-
-# create_past_df(Aggregate)
+# df = create_past_df(Aggregate)
+# print(df[['time', 'low', 'min_target_5']])

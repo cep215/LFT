@@ -5,13 +5,13 @@ import requests
 import numpy as np
 
 
-from lft.init_features import create_past_df, log_ret, avg_ret
+from lft.init_features import create_past_df, log_ret, avg_ret, period_list, target_period_list
 from lft.db_def import Aggregate, Kraken
 
 pd.set_option('display.max_rows', 5000)
 
 
-period_list = np.array([4320, 1440, 360, 180, 60, 30, 15, 5, 3])
+
 
 alpha = 0.01
 
@@ -42,7 +42,7 @@ alpha = 0.01
 #         return (avg_2 - avg_1)/avg_1
 
 #########################################################
-df = create_past_df(Aggregate).iloc[-20:]
+df = create_past_df(Aggregate).iloc[-500:]
 df = df.convert_objects(convert_numeric=True)
 #########################################################
 
@@ -96,7 +96,18 @@ def update_df_features(df, symbol, comparison_symbol, exchange):
 
     index = df[df['avg'].isnull()].index
 
+    ### Calculate target_price
+    for period in target_period_list:
+        min = df[::-1]['low'].rolling(window=period).min().shift()
+        df['min_target_' + str(period)] = min
+        max = df[::-1]['high'].rolling(window=period).max().shift()
+        df['max_target_' + str(period)] = max
+
+
     for i in index:
+
+
+
         ### Calculate log_ret
         df['avg'].iloc[i] = (df['low'].iloc[i] + df['high'].iloc[i]) / 2
         for period in period_list:
@@ -148,17 +159,20 @@ starttime=time.time()
 
 while True:
     df = update_df_features(df, 'BTC', 'USD', '')
-    print("update df features index ", "\n", df[['time', 'open', 'close', 'high', 'low', 'volumeto', 'volumefrom',
-          'ema_volume_5',
-          'ema_close_5',
-          'log_ret_5',
-          'true_range_5',
-          'rel_volume_returns_5',
-          'std_close_5',
-          'returns_5',
-          'std_returns_5',
-          'lower_bb_5',
-          'upper_bb_5']],
+    print("update df features index ", "\n",
+          df[['time', 'open', 'close', 'high', 'low', 'volumeto', 'volumefrom',
+              # 'ema_volume_5',
+              # 'ema_close_5',
+              # 'log_ret_5',
+              # 'true_range_5',
+              # 'rel_volume_returns_5',
+              # 'std_close_5',
+              # 'returns_5',
+              # 'std_returns_5',
+              # 'lower_bb_5',
+              # 'upper_bb_5'
+              'min_target_5'
+              ]],
           file = open("output.txt", "a"))
     df = df.iloc[1:]
 
