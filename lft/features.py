@@ -103,6 +103,11 @@ def update_df_features(df, symbol, comparison_symbol, exchange):
         max = df[::-1]['high'].rolling(window=period).max().shift()
         df['max_target_' + str(period)] = max
 
+    ### Calculate min and max target return
+    for period in target_period_list:
+        df['min_target_return_' + str(period)] = np.log(df['min_target_' + str(period)] / df['close'])
+        df['max_target_return' + str(period)] = np.log(df['max_target_' + str(period)] / df['close'])
+
 
     for i in index:
 
@@ -171,7 +176,8 @@ while True:
               # 'std_returns_5',
               # 'lower_bb_5',
               # 'upper_bb_5'
-              'min_target_5'
+              'min_target_5',
+              'min_target_return_5'
               ]],
           file = open("output.txt", "a"))
     df = df.iloc[1:]

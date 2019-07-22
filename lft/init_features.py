@@ -89,6 +89,11 @@ def create_past_df(db):
         max = df[::-1]['high'].rolling(window=period).max().shift()
         df['max_target_' + str(period)] = max
 
+    ### Calculate min and max target return
+    for period in target_period_list:
+        df['min_target_return_' + str(period)] = np.log(df['min_target_' + str(period)] / df['close'])
+        df['max_target_return' + str(period)] = np.log(df['max_target_' + str(period)] / df['close'])
+
     ### Calculate ema for different spans
     # alpha = 0.01
 
