@@ -5,7 +5,7 @@ import requests
 import numpy as np
 
 
-from lft.init_features import create_past_df, log_ret, avg_ret, period_list, target_period_list
+from lft.init_features import create_past_df, log_ret, avg_ret, period_list, target_period_list, alpha_list
 from lft.db_def import Aggregate, Kraken
 
 pd.set_option('display.max_rows', 5000)
@@ -42,7 +42,7 @@ alpha = 0.01
 #         return (avg_2 - avg_1)/avg_1
 
 #########################################################
-df = create_past_df(Aggregate).iloc[-500:]
+df = create_past_df(Aggregate).iloc[-5000:]
 df = df.convert_objects(convert_numeric=True)
 #########################################################
 
@@ -67,6 +67,7 @@ def get_last_record(symbol, comparison_symbol, exchange):
 def update_pricevol (df, df_update):
     for index, row in df_update.iterrows():
         if not df.loc[df['time'] == row.time].empty:
+
             df["volumeto"].loc[df['time'] == row.time] = row.volumeto
             df["volumefrom"].loc[df['time'] == row.time] = row.volumefrom
             df["close"].loc[df['time'] == row.time] = row.close
@@ -129,7 +130,7 @@ def update_df_features(df, symbol, comparison_symbol, exchange):
             df['true_range_' + str(period)].iloc[i] = (max - min) / (max + min)
 
         ### Calculate feature rel_volume_returns
-        for period in period_list:
+        for (period, alpha) in zip(period_list, alpha_list):
             # Calculate ema for different spans
             df['ema_volume_' + str(period)].iloc[i] = alpha * df['volumeto'].iloc[i] + (1-alpha) * df['ema_volume_'+ str(period)].iloc[i - 1]
 
@@ -147,8 +148,8 @@ def update_df_features(df, symbol, comparison_symbol, exchange):
             df['std_returns_' + str(period)].iloc[i] = np.std(df['returns_' + str(period)].iloc[(i - period) : i + 1])
 
         ### Calculate Bollinger Bands
-        for period in period_list:
-            df['ema_close_' + str(period)].iloc[i] = alpha * df['close'].iloc[i] + (1-alpha) * df['ema_close_'+ str(period)].iloc[i - 1]
+        for (period, alpha) in zip(period_list, alpha_list):
+            df['ema_close_' + str(period)].iloc[i] = alpha * df['close'].iloc[i] + (1 - alpha) * df['ema_close_' + str(period)].iloc[i - 1]
             # df['std_close_' + str(period)].iloc[index] = df['close'].rolling(window=period).std()
             df['std_close_' + str(period)].iloc[i] = np.std(df['close'].iloc[(i - period) : i + 1])
 
@@ -158,14 +159,69 @@ def update_df_features(df, symbol, comparison_symbol, exchange):
 
     return df
 
+position1 = 0
+position2 = 0
 
+def strategy ( update , unit ):
+    timpul = int(update[['time']].iloc[-1])
+    position = 0
+    global position1
+    global position2
+    timpul_latent = float(update[['time']].iloc[-3])
+    closeul = float(update[['close']].iloc[-3])
+    ecl360 = float(update[['ema_close_360']].iloc[-3])
+    ecl1440 = float(update[['ema_close_1440']].iloc[-3])
+    volumul = float(update[['volumeto']].iloc[-3])
+    evl360 = float(update[['ema_volume_360']].iloc[-3])
+    evl1440 = float(update[['ema_volume_1440']].iloc[-3])
+    if closeul < ecl1440 / 1.02 and volumul < 0.15 * evl1440:
+        if position1 + 1 <= 25:
+            position += unit
+            position1 += 1
+    if closeul > 1.02 * ecl1440 and volumul < 0.15 * evl1440:
+        if position1 - 1 >= -25:
+            position = position - unit
+            position1 = position1 - 1
+    if closeul < ecl360 / 1.02 and volumul < 0.7 * evl360:
+        if position2 + 1 <= 25:
+            position += unit
+            position2 += 1
+    if closeul < 1.02 * ecl360 and volumul < 0.7 * evl360:
+        if position2 - 1 >= -25:
+            position = position - unit
+            position2 = position2 - 1
+    if position != 0:
+        if position > 0:
+            tipul_trade = 'buy'
+        else:
+            tipul_trade = 'sell'
+        volum_trade = abs (position)
+        # response = kraken.query_private('AddOrder',
+        #                             {'pair': 'XXBTZEUR',
+        #                              'type': tipul_trade,
+        #                              'ordertype': 'market',
+        #                              'volume': volum_trade,
+        #                              'leverage': '3'
+        #                              })
+        # print (datetime.fromtimestamp(timpul))
+        # print (response)
+    str1 = "At real time " + \
+           str (timpul) + " and old time" + \
+           str(timpul_latent) + "the strategy tells you to bid " + \
+           str(position) + ": \n" "Strategy one position is " + \
+           str(position1) +"\nStrategy two position is " + \
+           str(position2) + "\nData is: \n" + "close: " + \
+           str(closeul) + "\nvolume: " + \
+           str(volumul) + "\nema_close_360: " + \
+           str(ecl360) + "\nema_close_1440: " + \
+           str(ecl1440) + "\nema_volume_360: " + \
+           str(evl360) + "\nema_volume_1440: " + \
+           str(evl1440) + "\n\n"
+    print(str1, file = open("output.txt", "a"))
 
 starttime=time.time()
 
-while True:
-    df = update_df_features(df, 'BTC', 'USD', '')
-    print("update df features index ", "\n",
-          df[['time', 'open', 'close', 'high', 'low', 'volumeto', 'volumefrom',
+print (df[['time', 'open', 'close', 'volumeto', 'ema_close_360'
               # 'ema_volume_5',
               # 'ema_close_5',
               # 'log_ret_5',
@@ -176,8 +232,28 @@ while True:
               # 'std_returns_5',
               # 'lower_bb_5',
               # 'upper_bb_5'
-              'min_target_5',
-              'min_target_return_5'
+              # 'min_target_5',
+              # 'min_target_return_5'
+              ]],
+          file = open("output.txt", "a"))
+
+while True:
+    df = update_df_features(df, 'BTC', 'USD', '')
+    strategy(df, 0.005)
+    print("update df features index ", "\n",
+          df[['time', 'open', 'close', 'volumeto', 'ema_close_360'
+              # 'ema_volume_5',
+              # 'ema_close_5',
+              # 'log_ret_5',
+              # 'true_range_5',
+              # 'rel_volume_returns_5',
+              # 'std_close_5',
+              # 'returns_5',
+              # 'std_returns_5',
+              # 'lower_bb_5',
+              # 'upper_bb_5'
+              # 'min_target_5',
+              # 'min_target_return_5'
               ]],
           file = open("output.txt", "a"))
     df = df.iloc[1:]

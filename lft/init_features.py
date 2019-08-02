@@ -8,6 +8,7 @@ import numpy as np
 import time
 import math
 from lft.db_def import Aggregate, Kraken
+import itertools
 
 pd.set_option('display.max_rows', 500)
 pd.set_option('display.max_columns', 500)
@@ -24,6 +25,15 @@ Session = sessionmaker(bind=engine)
 session = Session()
 
 period_list = np.array([4320, 1440, 360, 180, 60, 30, 15, 5, 3])
+alpha_list = np.array([0.0001604378647097727291148906149522633583756137707677,
+                       0.0004812363773337404152339813311276645785804424248118,
+                       0.0019235564243712611519494261654683301193732902289814,
+                       0.0038434127794247823525750865784463128371033701119830,
+                       0.0114859796471038646431324950617078895151506682298763,
+                       0.0228400315657540450673018538223454763336870612521282,
+                       0.0451583960895834489591009252793566572465208960832665,
+                       0.1294494367038758608637299825202539010208745756519969,
+                       0.2062994740159002626241471803638458698042533360500734])
 target_period_list = np.array([360, 300, 240, 180, 120, 60, 30, 15, 10, 5, 3])
 
 
@@ -80,6 +90,7 @@ def avg_ret(df, period, index):
 def create_past_df(db):
 
     df = get_pandas(Aggregate)
+    # df = df.iloc[0:10]
     # print(df.loc[df_aggregate['time'] == '1560857220'])
 
     ### Calculate min and max target price
@@ -94,11 +105,6 @@ def create_past_df(db):
         df['min_target_return_' + str(period)] = np.log(df['min_target_' + str(period)] / df['close'])
         df['max_target_return' + str(period)] = np.log(df['max_target_' + str(period)] / df['close'])
 
-    ### Calculate ema for different spans
-    # alpha = 0.01
-
-    for period in period_list:
-        df['ema_'+ str(period)] = df.volumeto.ewm(halflife=period, adjust =False).mean()
 
 
     ### Calculate feature true_range = (max-min)/(max+min) for different periods
@@ -125,19 +131,21 @@ def create_past_df(db):
         logret.excluded.add(0)
         df['log_ret_' + str(period)] = logret(df, period, df.index)
 
-    # print(log_ret(4320, 5000, df))
-
-
-    # print(log_ret(15, 2003))
-    # print(df.at[2003, 'log_ret_15'])
-
 
 
 
     ### Calculate feature rel_volume_returns
-    for period in period_list:
+    for (period, alpha) in zip(period_list, alpha_list):
+        df['ema_volume_' + str(period)] = 0
         # Calculate ema for different spans
-        df['ema_volume_'+str(period)] = df.volumeto.ewm(halflife=period, adjust=False).mean()
+        for index, row in df.iterrows():
+            if (index > 0):
+                df['ema_volume_'+str(period)].iloc[index] = \
+                    alpha * df['volumeto'].iloc[index] + \
+                    (1-alpha) * df['ema_volume_'+ str(period)].iloc[index-1]
+                # df.volumeto.ewm(halflife=period, adjust=False).mean()
+            else:
+                df['ema_volume_' + str(period)].iloc[index] = df['volumeto'].iloc[index]
 
         # Calculate returns on different periods
         avgret = np.vectorize(avg_ret)
@@ -156,8 +164,14 @@ def create_past_df(db):
 
 
     ### Calculate Bollinger Bands
-    for period in period_list:
-        df['ema_close_'+str(period)] = df.close.ewm(span=period, adjust=False).mean()
+    for (period, alpha) in zip(period_list, alpha_list):
+        df['ema_close_' + str(period)] = 0
+        for index, row in df.iterrows():
+            if (index > 0):
+                df['ema_close_'+str(period)].iloc[index] = alpha * df['close'].iloc[index] + (1-alpha) * df['ema_close_'+ str(period)].iloc[index-1]
+                # df.volumeto.ewm(halflife=period, adjust=False).mean()
+            else:
+                df['ema_close_' + str(period)].iloc[index] = df['close'].iloc[index]
         df['std_close_'+str(period)] = df['close'].rolling(window=period).std()
 
         df['lower_bb_'+str(period)] = df['ema_close_'+str(period)] - 2*df['std_close_'+str(period)]
@@ -176,4 +190,4 @@ def create_past_df(db):
     return df
 
 # df = create_past_df(Aggregate)
-# print(df[['time', 'low', 'min_target_5']])
+# print(df[['time', 'close', 'ema_close_5']])
