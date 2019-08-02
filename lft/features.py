@@ -43,6 +43,7 @@ alpha = 0.01
 
 #########################################################
 df = create_past_df(Aggregate).iloc[-5000:]
+# df = create_past_df(Aggregate).iloc[-10:]
 df = df.convert_objects(convert_numeric=True)
 #########################################################
 
@@ -67,13 +68,15 @@ def get_last_record(symbol, comparison_symbol, exchange):
 def update_pricevol (df, df_update):
     for index, row in df_update.iterrows():
         if not df.loc[df['time'] == row.time].empty:
-
             df["volumeto"].loc[df['time'] == row.time] = row.volumeto
             df["volumefrom"].loc[df['time'] == row.time] = row.volumefrom
             df["close"].loc[df['time'] == row.time] = row.close
             df["high"].loc[df['time'] == row.time] = row.high
             df["low"].loc[df['time'] == row.time]= row.low
             df["open"].loc[df['time'] == row.time] = row.open
+            #set avg to null to recalculate features
+            df["avg"].loc[df['time'] == row.time] = np.nan
+            print(df.loc[df['time'] == row.time])
 
         else:
             df = df.append(row, ignore_index = True)
@@ -111,7 +114,6 @@ def update_df_features(df, symbol, comparison_symbol, exchange):
 
 
     for i in index:
-
 
 
         ### Calculate log_ret
