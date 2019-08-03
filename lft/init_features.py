@@ -90,8 +90,8 @@ def avg_ret(df, period, index):
 def create_past_df(db):
 
     df = get_pandas(Aggregate)
-    # df = df.iloc[0:10]
-    # print(df.loc[df_aggregate['time'] == '1560857220'])
+    # df = df.iloc[-5000:]
+    # df = df.reset_index(drop=True)
 
     ### Calculate min and max target price
     for period in target_period_list:
@@ -136,16 +136,16 @@ def create_past_df(db):
 
     ### Calculate feature rel_volume_returns
     for (period, alpha) in zip(period_list, alpha_list):
-        df['ema_volume_' + str(period)] = 0
+        df['ema_volume_' + str(period)] = df.volumeto.ewm(alpha=alpha, adjust =False).mean()
         # Calculate ema for different spans
-        for index, row in df.iterrows():
-            if (index > 0):
-                df['ema_volume_'+str(period)].iloc[index] = \
-                    alpha * df['volumeto'].iloc[index] + \
-                    (1-alpha) * df['ema_volume_'+ str(period)].iloc[index-1]
-                # df.volumeto.ewm(halflife=period, adjust=False).mean()
-            else:
-                df['ema_volume_' + str(period)].iloc[index] = df['volumeto'].iloc[index]
+        # for index, row in df.iterrows():
+        #     if (index > 0):
+        #         df['ema_volume_'+str(period)].iloc[index] = \
+        #             alpha * df['volumeto'].iloc[index] + \
+        #             (1-alpha) * df['ema_volume_'+ str(period)].iloc[index-1]
+        #         # df.volumeto.ewm(halflife=period, adjust=False).mean()
+        #     else:
+        #         df['ema_volume_' + str(period)].iloc[index] = df['volumeto'].iloc[index]
 
         # Calculate returns on different periods
         avgret = np.vectorize(avg_ret)
@@ -165,13 +165,13 @@ def create_past_df(db):
 
     ### Calculate Bollinger Bands
     for (period, alpha) in zip(period_list, alpha_list):
-        df['ema_close_' + str(period)] = 0
-        for index, row in df.iterrows():
-            if (index > 0):
-                df['ema_close_'+str(period)].iloc[index] = alpha * df['close'].iloc[index] + (1-alpha) * df['ema_close_'+ str(period)].iloc[index-1]
-                # df.volumeto.ewm(halflife=period, adjust=False).mean()
-            else:
-                df['ema_close_' + str(period)].iloc[index] = df['close'].iloc[index]
+        df['ema_close_' + str(period)] = df.close.ewm(alpha=alpha, adjust =False).mean()
+        # for index, row in df.iterrows():
+        #     if (index > 0):
+        #         df['ema_close_'+str(period)].iloc[index] = alpha * df['close'].iloc[index] + (1-alpha) * df['ema_close_'+ str(period)].iloc[index-1]
+        #         # df.volumeto.ewm(halflife=period, adjust=False).mean()
+        #     else:
+        #         df['ema_close_' + str(period)].iloc[index] = df['close'].iloc[index]
         df['std_close_'+str(period)] = df['close'].rolling(window=period).std()
 
         df['lower_bb_'+str(period)] = df['ema_close_'+str(period)] - 2*df['std_close_'+str(period)]

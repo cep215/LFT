@@ -3,49 +3,22 @@ import time
 import pandas as pd
 import requests
 import numpy as np
+import os
 
 
 from lft.init_features import create_past_df, log_ret, avg_ret, period_list, target_period_list, alpha_list
 from lft.db_def import Aggregate, Kraken
 
-pd.set_option('display.max_rows', 5000)
 
-
-
-
-alpha = 0.01
-
-# def get_avg(df, start, period):
-#     avg = df['avg'].iloc[(start - period):start].mean(axis=0)
-#     if (period != 0):
-#         return avg
-#     else:
-#         return 1
-#
-# def log_ret(df, period, index):
-#
-#     p1 = math.ceil(period / 24)
-#     p2 = math.ceil(2 / 3 * period / 24)
-#     avg_1 = get_avg(df, index - period, p1)
-#     avg_2 = get_avg(df, index - p2, p2)
-#
-#     if (avg_1 != 0):
-#         return math.log(avg_2/avg_1)
-#
-# def avg_ret(df, period, index):
-#
-#     p1 = math.ceil(period / 24)
-#     p2 = math.ceil(2 / 3 * period / 24)
-#     avg_1 = get_avg(df, index - period, p1)
-#     avg_2 = get_avg(df, index - p2, p2)
-#     if (avg_1 != 0):
-#         return (avg_2 - avg_1)/avg_1
+#aici in loc de ~/Desktop/lft/LFT/lft/ trebuie sa pui path-ul unde ai tu directory-ul
+os.system("scp ubuntu@ec2-18-224-69-153.us-east-2.compute.amazonaws.com:~/LFT/lft/data.db ~/Desktop/lft/LFT/lft/")
 
 #########################################################
 df = create_past_df(Aggregate).iloc[-5000:]
 # df = create_past_df(Aggregate).iloc[-10:]
 df = df.convert_objects(convert_numeric=True)
 #########################################################
+
 
 
 # Returns dataframe containing last 10 minutes of data (from cryptocompare api)
@@ -76,10 +49,11 @@ def update_pricevol (df, df_update):
             df["open"].loc[df['time'] == row.time] = row.open
             #set avg to null to recalculate features
             df["avg"].loc[df['time'] == row.time] = np.nan
-            print(df.loc[df['time'] == row.time])
+
 
         else:
             df = df.append(row, ignore_index = True)
+
     return df
 
 # Returns old dataframe concatanated with new dataframe
