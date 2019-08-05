@@ -90,8 +90,9 @@ def avg_ret(df, period, index):
 def create_past_df(db):
 
     df = get_pandas(Aggregate)
-    # df = df.iloc[-5000:]
-    # df = df.reset_index(drop=True)
+    #### CAP TO 40,000 ####
+    df = df.iloc[-40000:]
+    df = df.reset_index(drop=True)
 
     ### Calculate min and max target price
     for period in target_period_list:
@@ -110,7 +111,9 @@ def create_past_df(db):
     ### Calculate feature true_range = (max-min)/(max+min) for different periods
     for period in period_list:
         min = df['low'].rolling(window=period).min()
+        df['min_low_'+str(period)] = min
         max = df['high'].rolling(window=period).max()
+        df['max_high_' + str(period)] = max
         df['true_range_'+str(period)] = (max-min)/(max+min)
 
 

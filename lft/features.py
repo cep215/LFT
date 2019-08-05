@@ -4,22 +4,23 @@ import pandas as pd
 import requests
 import numpy as np
 import os
-
+import krakenex
+from datetime import datetime
 
 from lft.init_features import create_past_df, log_ret, avg_ret, period_list, target_period_list, alpha_list
 from lft.db_def import Aggregate, Kraken
 
+kraken = krakenex.API()
+kraken.load_key('/Users/StefanDavid/PycharmProjects/Simulator/venv/kraken.key')
 
-#aici in loc de ~/Desktop/lft/LFT/lft/ trebuie sa pui path-ul unde ai tu directory-ul
-os.system("scp ubuntu@ec2-18-224-69-153.us-east-2.compute.amazonaws.com:~/LFT/lft/data.db ~/Desktop/lft/LFT/lft/")
+os.system("scp ubuntu@ec2-18-224-69-153.us-east-2.compute.amazonaws.com:~/LFT/lft/data.db ~/Desktop/LFT/lft/")
 
 #########################################################
-df = create_past_df(Aggregate).iloc[-5000:]
-# df = create_past_df(Aggregate).iloc[-10:]
+df = create_past_df(Aggregate).iloc[-40000:]
 df = df.convert_objects(convert_numeric=True)
 #########################################################
 
-
+df.to_csv("Stefan_Test.csv")
 
 # Returns dataframe containing last 10 minutes of data (from cryptocompare api)
 def get_last_record(symbol, comparison_symbol, exchange):
@@ -101,8 +102,10 @@ def update_df_features(df, symbol, comparison_symbol, exchange):
         for period in period_list:
             # min = df['low'].rolling(window=period).min()
             min = np.min(df['low'].iloc[(i - period) : i + 1])
+            df['min_low_' + str(period)].iloc[i] = min
             # max = df['high'].rolling(window=period).max()
             max = np.max(df['high'].iloc[(i - period) : i + 1])
+            df['max_high_' + str(period)].iloc[i] = max
             df['true_range_' + str(period)].iloc[i] = (max - min) / (max + min)
 
         ### Calculate feature rel_volume_returns
@@ -136,122 +139,12 @@ def update_df_features(df, symbol, comparison_symbol, exchange):
     return df
 
 position1 = 0
-position2 = 0
-
-def strategy ( update , unit ):
-    timpul = int(update[['time']].iloc[-1])
-    position = 0
-    global position1
-    global position2
-    timpul_latent = float(update[['time']].iloc[-3])
-    closeul = float(update[['close']].iloc[-3])
-    ecl360 = float(update[['ema_close_360']].iloc[-3])
-    ecl1440 = float(update[['ema_close_1440']].iloc[-3])
-    volumul = float(update[['volumeto']].iloc[-3])
-    evl360 = float(update[['ema_volume_360']].iloc[-3])
-    evl1440 = float(update[['ema_volume_1440']].iloc[-3])
-    if closeul < ecl1440 / 1.02 and volumul < 0.15 * evl1440:
-        if position1 + 1 <= 25:
-            position += unit
-            position1 += 1
-    if closeul > 1.02 * ecl1440 and volumul < 0.15 * evl1440:
-        if position1 - 1 >= -25:
-            position = position - unit
-            position1 = position1 - 1
-    if closeul < ecl360 / 1.02 and volumul < 0.7 * evl360:
-        if position2 + 1 <= 25:
-            position += unit
-            position2 += 1
-    if closeul < 1.02 * ecl360 and volumul < 0.7 * evl360:
-        if position2 - 1 >= -25:
-            position = position - unit
-            position2 = position2 - 1
-    if position != 0:
-        if position > 0:
-            tipul_trade = 'buy'
-        else:
-            tipul_trade = 'sell'
-        volum_trade = abs (position)
-        # response = kraken.query_private('AddOrder',
-        #                             {'pair': 'XXBTZEUR',
-        #                              'type': tipul_trade,
-        #                              'ordertype': 'market',
-        #                              'volume': volum_trade,
-        #                              'leverage': '3'
-        #                              })
-        # print (datetime.fromtimestamp(timpul))
-        # print (response)
-    str1 = "At real time " + \
-           str (timpul) + " and old time" + \
-           str(timpul_latent) + "the strategy tells you to bid " + \
-           str(position) + ": \n" "Strategy one position is " + \
-           str(position1) +"\nStrategy two position is " + \
-           str(position2) + "\nData is: \n" + "close: " + \
-           str(closeul) + "\nvolume: " + \
-           str(volumul) + "\nema_close_360: " + \
-           str(ecl360) + "\nema_close_1440: " + \
-           str(ecl1440) + "\nema_volume_360: " + \
-           str(evl360) + "\nema_volume_1440: " + \
-           str(evl1440) + "\n\n"
-    print(str1, file = open("output.txt", "a"))
 
 starttime=time.time()
 
-print (df[['time', 'open', 'close', 'volumeto', 'ema_close_360'
-              # 'ema_volume_5',
-              # 'ema_close_5',
-              # 'log_ret_5',
-              # 'true_range_5',
-              # 'rel_volume_returns_5',
-              # 'std_close_5',
-              # 'returns_5',
-              # 'std_returns_5',
-              # 'lower_bb_5',
-              # 'upper_bb_5'
-              # 'min_target_5',
-              # 'min_target_return_5'
-              ]],
-          file = open("output.txt", "a"))
 
 while True:
     df = update_df_features(df, 'BTC', 'USD', '')
-    strategy(df, 0.005)
-    print("update df features index ", "\n",
-          df[['time', 'open', 'close', 'volumeto', 'ema_close_360'
-              # 'ema_volume_5',
-              # 'ema_close_5',
-              # 'log_ret_5',
-              # 'true_range_5',
-              # 'rel_volume_returns_5',
-              # 'std_close_5',
-              # 'returns_5',
-              # 'std_returns_5',
-              # 'lower_bb_5',
-              # 'upper_bb_5'
-              # 'min_target_5',
-              # 'min_target_return_5'
-              ]],
-          file = open("output.txt", "a"))
+    # strategy(df, 0.01)
     df = df.iloc[1:]
-
-    # print('\n\n\n\n\n\n\n',
-    #       file=open("output.txt", "a"))
-    # print(df[['time', 'open', 'close', 'high', 'low', 'volumeto', 'volumefrom',
-    #         'ema_volume_4320',
-    #         'ema_close_4320',
-    #         'log_ret_4320',
-    #         'true_range_4320',
-    #         'rel_volume_returns_4320',
-    #         'std_close_4320',
-    #         'returns_4320',
-    #         'std_returns_4320',
-    #         'lower_bb_4320',
-    #         'upper_bb_4320']],
-    #     file=open("output.txt", "a"))
-
     time.sleep(60.0 - ((time.time() - starttime) % 60.0))
-
-
-
-
-
