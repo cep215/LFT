@@ -4,24 +4,113 @@ import pandas as pd
 import requests
 import numpy as np
 import os
-# import krakenex
+import krakenex
 from datetime import datetime
 
-from lft.init_features import create_past_df, log_ret, avg_ret, period_list, target_period_list, alpha_list
+import math
+import matplotlib
+matplotlib.use('TkAgg')
+import matplotlib.pyplot as plt
+
+from lft.init_features import create_past_df, period_list, target_period_list, alpha_list
+    # , log_ret, avg_ret
 from lft.db_def import Aggregate, Kraken
 
-# kraken = krakenex.API()
-# kraken.load_key('/Users/StefanDavid/PycharmProjects/Simulator/venv/kraken.key')
+kraken = krakenex.API()
+kraken.load_key('/Users/StefanDavid/PycharmProjects/Simulator/venv/kraken.key')
 
 os.system("scp ubuntu@ec2-18-224-69-153.us-east-2.compute.amazonaws.com:~/LFT/lft/data.db ~/Desktop/LFT/lft/")
 
 #########################################################
-df = create_past_df(Aggregate).iloc[-400:]
+df = create_past_df(Aggregate).iloc[-40000:]
 df = df.convert_objects(convert_numeric=True)
 #########################################################
 
 
 # df.to_csv("Stefan_Test.csv")
+
+
+def compute_pnl (strategy, starttime, endtime, pretzul, taker_fee):
+    pnl = pd.DataFrame (columns = ['TimeStamp', 'USD', 'BTC', 'UnrealisedPnL', 'Traded_Volume'])
+    pnl.loc[0] = [starttime - 60, 0.0, 0.0, 0.0, 0.0]
+    i = 1
+
+    for index, row in strategy.iterrows ():
+        time = int (row ['Time'])
+        quantity = float (row ['Trade'])
+        price = float (row ['Price'])
+        new_row = [0, 0.0, 0.0, 0.0, 0.0]
+        new_row [0] = time
+        new_row [1] = float(pnl ['USD'].iloc [i - 1]) - quantity * price - abs (quantity * price * taker_fee)
+        new_row [2] = float (pnl ['BTC'].iloc [i - 1] + quantity)
+        new_row [3] = new_row [1] + new_row [2] * price - abs (new_row [2] * price * taker_fee)
+        new_row [4] = abs (quantity)
+        pnl.loc [i] = new_row
+        i = i + 1
+    new_row = [0, 0.0, 0.0, 0.0, 0.0]
+    new_row [0] = endtime
+    new_row [1] = float(pnl ['USD'].iloc [i - 1])
+    new_row [2] = float(pnl ['BTC'].iloc [i - 1])
+    new_row [3] = new_row [1] + new_row [2] * pretzul - abs (new_row [2] * pretzul * taker_fee)
+    new_row [4] = 0
+    pnl.loc [i] = new_row
+    return pnl
+
+def plot_pnl (pnl, name):
+    startdate = int(pnl.iloc[1][0])
+    x = (pnl ['TimeStamp'] [1:] - startdate) / 86400
+    y1 = pnl ['UnrealisedPnL'] [1:]
+    y2 = pnl ['USD'] [1:]
+    y3 = y1 - y2
+    plt.figure (figsize = (30, 12))
+    plt.title ('PnL Chart')
+    plt.subplot (1, 2, 1)
+    plt.plot (x, y1, color='black', linewidth=1.5)
+    plt.ylabel ('PnL (USD)')
+    plt.xlabel ('time(days)')
+    plt.legend (['Total PnL'], loc='upper left')
+    plt.subplot (1, 2, 2)
+    plt.plot (x, y2, color='green', linewidth=1.5)
+    plt.plot (x, y3, color='red', linewidth=1.5)
+    plt.ylabel ('PnL (USD)')
+    plt.xlabel ('time(days)')
+    plt.legend (['USD Value', 'BTC Value'], loc='upper left')
+    plt.savefig (name+'.png')
+
+def simsummary (pnl, name, name_file):
+    sims = pd.DataFrame (columns = ['PnL', 'Max USD', 'Max BTC', 'Returns%', 'Sharpe', 'Traded_Volume', 'No_days'])
+    startdate = int (pnl.iloc [1] [0])
+    enddate = int (pnl.iloc [-1] [0])
+    no_days = float (enddate - startdate) / 86400.0
+    sims1 = pnl.iloc [-1] ['UnrealisedPnL']
+    sims2 = max ([-n for n in pnl.loc [:] ['USD']])
+    sims2 = max (0, sims2)
+    sims3 = max ([-n for n in [a_i - b_i for a_i, b_i in zip (pnl.loc [:] ['UnrealisedPnL'], pnl.loc [:] ['USD'])]])
+    sims3 = max (0, sims3)
+    booksaiz = max (sims2, sims3)
+    sims4 = 100 * sims1 / booksaiz
+    sims4 = sims4 / no_days
+    pnls = []
+    for index, row in pnl.iterrows():
+        if row ['TimeStamp'] < startdate:
+            past = row ['UnrealisedPnL'] + booksaiz
+            continue
+        actual = row ['UnrealisedPnL'] + booksaiz
+        pnls.append (actual / past - 1)
+        past = actual
+    average = float (sum (pnls)) / float (len (pnls))
+    sims5 = average / np.std (pnls)
+    sims6 = sum ([a for a in pnl.loc [:] ['Traded_Volume']])
+    sims1 = '{0:.2f}'.format (sims1)
+    sims2 = '{0:.2f}'.format (sims2)
+    sims3 = '{0:.2f}'.format (sims3)
+    sims4 = '{0:.3f}'.format (sims4)
+    sims5 = '{0:.3f}'.format (sims5)
+    sims7 = '{0:.1f}'.format (no_days)
+    sims.loc [0] = [sims1, sims2, sims3, sims4, sims5, sims6, sims7]
+    print (name, file = open (name_file + ".txt", "a"))
+    print (sims, file = open (name_file + ".txt", "a"))
+
 
 # Returns dataframe containing last 10 minutes of data (from cryptocompare api)
 def get_last_record(symbol, comparison_symbol, exchange):
@@ -61,11 +150,7 @@ def update_pricevol (df, df_update):
 # Returns old dataframe concatanated with new dataframe
 def update_df(df, symbol, comparison_symbol, exchange):
     df_update = get_last_record(symbol, comparison_symbol, exchange)
-
     df = update_pricevol(df, df_update)
-
-    # df_res = pd.concat([df, df_update]).drop_duplicates(subset='time', keep = 'first').reset_index(drop=True)
-
     return df
 
 
@@ -97,18 +182,13 @@ def update_df_features(df, symbol, comparison_symbol, exchange):
         for period in period_list:
             p1 = math.ceil(period / 24)
             p2 = math.ceil(2 / 3 * period / 24)
-            # df['avg1_' + str(period)].iloc[i] = np.mean(df['avg'].iloc[(i - period + 1) : (i - period + p1 + 2)])
-            # df['avg2_' + str(period)].iloc[i] = np.mean(df['avg'].iloc[(i - p2 + 1) : (i + 1)])
 
-            df['avg1_' + str(period)] = df['avg'].shift(period - p1 + 1).rolling(p1).mean()
+            df['avg1_' + str(period)] = df['avg'].shift(period - p2 + 1).rolling(p1).mean()
             df['avg2_' + str(period)] = df['avg'].rolling(p2).mean()
-
-            # avg_1 = get_avg(df, index - period, p1)
-            # avg_2 = get_avg(df, index - p2 + 1, p2)
 
             df['log_ret_' + str(period)].iloc[i] = np.log(df['avg2_' + str(period)].iloc[i] / df['avg1_' + str(period)].iloc[i])
 
-            df['log_ret_old_' + str(period)].iloc[i] = log_ret(df, period, i)
+            # df['log_ret_old_' + str(period)].iloc[i] = log_ret(df, period, i)
 
 
 
@@ -130,7 +210,8 @@ def update_df_features(df, symbol, comparison_symbol, exchange):
             # Calculate returns on different periods
             # df['returns_' + str(period)].iloc[i] = df['close'].pct_change(periods=period)
             df['returns_' + str(period)].iloc[i] = (df['avg2_' + str(period)].iloc[i] - df['avg1_' + str(period)].iloc[i]) / df['avg1_' + str(period)].iloc[i]
-            df['returns_old_'+str(period)].iloc[i] = avg_ret(df, period, i)
+            # df['returns_old_'+str(period)].iloc[i] = avg_ret(df, period, i)
+
             # df['returns_' + str(period)].iloc[i] = (df['close'].iloc[i] - df['close'].iloc[i - period]) / df['close'].iloc[i-period]
 
             df['rel_volume_returns_' + str(period)].iloc[i] = df['volumeto'].iloc[i] / df['ema_volume_' + str(
@@ -153,14 +234,61 @@ def update_df_features(df, symbol, comparison_symbol, exchange):
 
     return df
 
-position1 = 0
-
 starttime=time.time()
 
+###################    GLOBAL BOOK VARIABLES    ###################
+# In combo function modify "lista" for new alphas
+booksize = 0.0
+positions = [] # number of alphas, positions held assuming alphas have each booksize equal to booksize
+weight = [] # 1, and then the weight of each alpha
+###################################################################
+# for i193 in range (1, positions[0] + 1, 1):
+#     alpha.to_csv (r'alpha'+str(i193)+'.csv')
+    # positions.append(0)
+
+def combo (update):
+    global positions
+    global weight
+    lista = []
+    timpul = int(update[['time']].iloc[-1])
+    closeul = float(update[['close']].iloc[-1])
+    position = 0
+
+    for i1 in range (0, len(lista), 1):
+        position = position + (lista [i1]) [0] * weight [i1 + 1]
+
+    if position != 0:
+        if position > 0:
+            tipul_trade = 'buy'
+        else:
+            tipul_trade = 'sell'
+
+        volum_trade = abs(position)
+        volum_trade = '{0:.8f}'.format(volum_trade)
+        response = kraken.query_private('AddOrder',
+                                        {'pair': 'XXBTZEUR',
+                                         'type': tipul_trade,
+                                         'ordertype': 'market',
+                                         'volume': volum_trade,
+                                         'leverage': '2'
+                                         })
+        print (datetime.fromtimestamp(timpul))
+        print (response)
+
+    if timpul % 3600 == 0:
+        i192 = 0
+        for alpha in lista:
+            i192 += 1
+            if len ( alpha [1] ) > 0:
+                pnl = compute_pnl (alpha [1], 1565038800, timpul, closeul, 0.0026)
+                plot_pnl (pnl, 'alpha' + str(i192))
+                simsummary(pnl, str(datetime.fromtimestamp(timpul)), 'alpha' + str(i192))
 
 while True:
-    df = update_df_features(df, 'BTC', 'USD', '')
-    # strategy(df, 0.01)
+    df = update_df_features (df, 'BTC', 'USD', '')
+    ########## STRATEGY ##########
+    combo (df)
+    ##############################
     df = df.iloc[1:]
-    print(df[['time', 'close', 'avg', 'avg1_5', 'avg2_5', 'returns_5', 'returns_old_5', 'log_ret_360', 'log_ret_old_360']])
+    # print(df[['time', 'close', 'avg', 'avg1_5', 'avg2_5', 'returns_5', 'log_ret_360']])
     time.sleep(60.0 - ((time.time() - starttime) % 60.0))

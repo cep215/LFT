@@ -43,47 +43,47 @@ def get_pandas(db):
     return df
 
 
-# Getting the average price for interval (start, start+period)
-def get_avg(df, start, period):
-    avg = df['avg'].iloc[start:(start + period)].mean(axis=0)
-    if (period != 0):
-        return avg
-    else:
-        return 1
-
-
-# Calculate log_ret for a period
-def log_ret(df, period, index):
-
-    p1 = math.ceil(period / 24)
-    p2 = math.ceil(2 / 3 * period / 24)
-    if (index - period > 0):
-        avg_1 = get_avg(df, index - period, p1)
-        avg_2 = get_avg(df, index - p2 + 1, p2)
-    else:
-        avg_1 = 1
-        avg_2 = 1
-
-    if (avg_1 != 0):
-        return math.log(avg_2/avg_1)
-    else:
-        return 0
-
-def avg_ret(df, period, index):
-
-    p1 = math.ceil(period / 24)
-    p2 = math.ceil(2 / 3 * period / 24)
-    if (index - period > 0):
-        avg_1 = get_avg(df, index - period, p1)
-        avg_2 = get_avg(df, index - p2 + 1, p2)
-        # print(avg_1, avg_2)
-    else:
-        avg_1 = 1
-        avg_2 = 1
-    if (avg_1 != 0):
-        return (avg_2 - avg_1)/avg_1
-    else :
-        return 0
+# # Getting the average price for interval (start, start+period)
+# def get_avg(df, start, period):
+#     avg = df['avg'].iloc[start:(start + period)].mean(axis=0)
+#     if (period != 0):
+#         return avg
+#     else:
+#         return 1
+#
+#
+# # Calculate log_ret for a period
+# def log_ret(df, period, index):
+#
+#     p1 = math.ceil(period / 24)
+#     p2 = math.ceil(2 / 3 * period / 24)
+#     if (index - period > 0):
+#         avg_1 = get_avg(df, index - period, p1)
+#         avg_2 = get_avg(df, index - p2 + 1, p2)
+#     else:
+#         avg_1 = 1
+#         avg_2 = 1
+#
+#     if (avg_1 != 0):
+#         return math.log(avg_2/avg_1)
+#     else:
+#         return 0
+#
+# def avg_ret(df, period, index):
+#
+#     p1 = math.ceil(period / 24)
+#     p2 = math.ceil(2 / 3 * period / 24)
+#     if (index - period > 0):
+#         avg_1 = get_avg(df, index - period, p1)
+#         avg_2 = get_avg(df, index - p2 + 1, p2)
+#         # print(avg_1, avg_2)
+#     else:
+#         avg_1 = 1
+#         avg_2 = 1
+#     if (avg_1 != 0):
+#         return (avg_2 - avg_1)/avg_1
+#     else :
+#         return 0
 
 
 
@@ -91,8 +91,8 @@ def create_past_df(db):
 
     df = get_pandas(Aggregate)
     #### CAP TO 40,000 ####
-    df = df.iloc[-40000:]
-    df = df.reset_index(drop=True)
+    # df = df.iloc[-400:]
+    # df = df.reset_index(drop=True)
 
     ### Calculate min and max target price
     for period in target_period_list:
@@ -124,22 +124,28 @@ def create_past_df(db):
 
     df['avg'] = (df['low'] + df['high']) /2
 
-
-
-    #Populate df with log_ret_period
+    # Populate df with log_ret_period
     for period in period_list:
-        df['log_ret_'+str(period)] = 0
-        logret = np.vectorize(log_ret)
-        #do not vectorize on df
-        logret.excluded.add(0)
-        df['log_ret_' + str(period)] = logret(df, period, df.index)
+        p1 = math.ceil(period / 24)
+        p2 = math.ceil(2 / 3 * period / 24)
+        df['avg1_' + str(period)] = df['avg'].shift(period - p2 + 1).rolling(p1).mean()
+        df['avg2_' + str(period)] = df['avg'].rolling(p2).mean()
+        df['log_ret_' + str(period)] = np.log(df['avg2_' + str(period)] / df['avg1_' + str(period)])
 
+
+    # for period in period_list:
+    #     df['log_ret_old_'+str(period)] = 0
+    #     logret = np.vectorize(log_ret)
+    #     #do not vectorize on df
+    #     logret.excluded.add(0)
+    #     df['log_ret_old_' + str(period)] = logret(df, period, df.index)
 
 
 
     ### Calculate feature rel_volume_returns
     for (period, alpha) in zip(period_list, alpha_list):
         df['ema_volume_' + str(period)] = df.volumeto.ewm(alpha=alpha, adjust =False).mean()
+        df['returns_' + str(period)] = (df['avg2_' + str(period)] - df['avg1_' + str(period)]) / df['avg1_' + str(period)]
         # Calculate ema for different spans
         # for index, row in df.iterrows():
         #     if (index > 0):
@@ -151,9 +157,10 @@ def create_past_df(db):
         #         df['ema_volume_' + str(period)].iloc[index] = df['volumeto'].iloc[index]
 
         # Calculate returns on different periods
-        avgret = np.vectorize(avg_ret)
-        avgret.excluded.add(0)
-        df['returns_' + str(period)] = avgret(df, period, df.index)
+        # df['returns_old_' + str(period)] = 0
+        # avgret = np.vectorize(avg_ret)
+        # avgret.excluded.add(0)
+        # df['returns_old_' + str(period)] = avgret(df, period, df.index)
 
         df['rel_volume_returns_'+str(period)] = df['volumeto']/df['ema_volume_'+str(period)]*df['returns_'+str(period)]
 
@@ -193,4 +200,4 @@ def create_past_df(db):
     return df
 
 # df = create_past_df(Aggregate)
-# print(df[['time', 'close', 'ema_close_5']])
+# print(df[['time', 'avg', 'avg1_360', 'avg2_360', 'returns_5', 'returns_old_5']])
