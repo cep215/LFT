@@ -4,23 +4,24 @@ import pandas as pd
 import requests
 import numpy as np
 import os
-import krakenex
+# import krakenex
 from datetime import datetime
 
 from lft.init_features import create_past_df, log_ret, avg_ret, period_list, target_period_list, alpha_list
 from lft.db_def import Aggregate, Kraken
 
-kraken = krakenex.API()
-kraken.load_key('/Users/StefanDavid/PycharmProjects/Simulator/venv/kraken.key')
+# kraken = krakenex.API()
+# kraken.load_key('/Users/StefanDavid/PycharmProjects/Simulator/venv/kraken.key')
 
 os.system("scp ubuntu@ec2-18-224-69-153.us-east-2.compute.amazonaws.com:~/LFT/lft/data.db ~/Desktop/LFT/lft/")
 
 #########################################################
-df = create_past_df(Aggregate).iloc[-40000:]
+df = create_past_df(Aggregate).iloc[-400:]
 df = df.convert_objects(convert_numeric=True)
 #########################################################
 
-df.to_csv("Stefan_Test.csv")
+
+# df.to_csv("Stefan_Test.csv")
 
 # Returns dataframe containing last 10 minutes of data (from cryptocompare api)
 def get_last_record(symbol, comparison_symbol, exchange):
@@ -94,7 +95,20 @@ def update_df_features(df, symbol, comparison_symbol, exchange):
         ### Calculate log_ret
         df['avg'].iloc[i] = (df['low'].iloc[i] + df['high'].iloc[i]) / 2
         for period in period_list:
-            df['log_ret_' + str(period)].iloc[i] = log_ret(df, period, i)
+            p1 = math.ceil(period / 24)
+            p2 = math.ceil(2 / 3 * period / 24)
+            # df['avg1_' + str(period)].iloc[i] = np.mean(df['avg'].iloc[(i - period + 1) : (i - period + p1 + 2)])
+            # df['avg2_' + str(period)].iloc[i] = np.mean(df['avg'].iloc[(i - p2 + 1) : (i + 1)])
+
+            df['avg1_' + str(period)] = df['avg'].shift(period - p1 + 1).rolling(p1).mean()
+            df['avg2_' + str(period)] = df['avg'].rolling(p2).mean()
+
+            # avg_1 = get_avg(df, index - period, p1)
+            # avg_2 = get_avg(df, index - p2 + 1, p2)
+
+            df['log_ret_' + str(period)].iloc[i] = np.log(df['avg2_' + str(period)].iloc[i] / df['avg1_' + str(period)].iloc[i])
+
+            df['log_ret_old_' + str(period)].iloc[i] = log_ret(df, period, i)
 
 
 
@@ -115,7 +129,8 @@ def update_df_features(df, symbol, comparison_symbol, exchange):
 
             # Calculate returns on different periods
             # df['returns_' + str(period)].iloc[i] = df['close'].pct_change(periods=period)
-            df['returns_'+str(period)].iloc[i] = avg_ret(df, period, i)
+            df['returns_' + str(period)].iloc[i] = (df['avg2_' + str(period)].iloc[i] - df['avg1_' + str(period)].iloc[i]) / df['avg1_' + str(period)].iloc[i]
+            df['returns_old_'+str(period)].iloc[i] = avg_ret(df, period, i)
             # df['returns_' + str(period)].iloc[i] = (df['close'].iloc[i] - df['close'].iloc[i - period]) / df['close'].iloc[i-period]
 
             df['rel_volume_returns_' + str(period)].iloc[i] = df['volumeto'].iloc[i] / df['ema_volume_' + str(
@@ -147,4 +162,5 @@ while True:
     df = update_df_features(df, 'BTC', 'USD', '')
     # strategy(df, 0.01)
     df = df.iloc[1:]
+    print(df[['time', 'close', 'avg', 'avg1_5', 'avg2_5', 'returns_5', 'returns_old_5', 'log_ret_360', 'log_ret_old_360']])
     time.sleep(60.0 - ((time.time() - starttime) % 60.0))
