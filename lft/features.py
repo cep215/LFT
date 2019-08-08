@@ -22,7 +22,8 @@ kraken.load_key('/Users/StefanDavid/PycharmProjects/Simulator/venv/kraken.key')
 os.system("scp ubuntu@ec2-18-224-69-153.us-east-2.compute.amazonaws.com:~/LFT/lft/data.db ~/Desktop/LFT/lft/")
 
 #########################################################
-df = create_past_df(Aggregate).iloc[-40000:]
+df = create_past_df(Aggregate).iloc[-5000:]
+df = df.reset_index(drop=True)
 df = df.convert_objects(convert_numeric=True)
 #########################################################
 
@@ -159,7 +160,7 @@ def update_df_features(df, symbol, comparison_symbol, exchange):
     df = update_df(df, symbol, comparison_symbol, exchange)
 
 
-    index = df[df['avg'].isnull()].index
+    index_null = df[df['avg'].isnull()].index
 
     ### Calculate target_price
     for period in target_period_list:
@@ -174,7 +175,7 @@ def update_df_features(df, symbol, comparison_symbol, exchange):
         df['max_target_return' + str(period)] = np.log(df['max_target_' + str(period)] / df['close'])
 
 
-    for i in index:
+    for i in index_null:
 
 
         ### Calculate log_ret
@@ -238,18 +239,123 @@ starttime=time.time()
 
 ###################    GLOBAL BOOK VARIABLES    ###################
 # In combo function modify "lista" for new alphas
-booksize = 0.0
-positions = [] # number of alphas, positions held assuming alphas have each booksize equal to booksize
-weight = [] # 1, and then the weight of each alpha
+booksize = 0.25
+positions = [3, -0.25, 12, -0.12640067] # number of alphas, positions held assuming alphas have each booksize equal to booksize
+weight = [1, 0.4, 0.4, 0.2] # 1, and then the weight of each alpha
 ###################################################################
 # for i193 in range (1, positions[0] + 1, 1):
 #     alpha.to_csv (r'alpha'+str(i193)+'.csv')
     # positions.append(0)
 
+# alpha_tong_vol (180, 5, 3, 1.25)
+def alpha1 (update):
+    global booksize
+    global positions
+    alpha1df = pd.read_csv("alpha1.csv", usecols=range(1,4))
+    position = 0
+    test_tong = 57.82911125091462
+    scaling = 3 * test_tong / booksize
+    max_pos = booksize
+    test_tong = test_tong / scaling
+    timpul_latent = int(update[['time']].iloc[-3])
+    closeul = float(update[['close']].iloc[-3])
+    ecl5 = float(update[['ema_close_5']].iloc[-3])
+    evl30 = float(update[['ema_volume_30']].iloc[-3])
+    evl360 = float(update[['ema_volume_360']].iloc[-3])
+    ml180 = float(update[['min_low_180']].iloc[-3])
+    mh180 = float(update[['max_high_180']].iloc[-3])
+    if evl30 < 2.25 * evl360:
+        if timpul_latent % 10800 == 0:
+            position = ((ml180 + mh180) / 2 - ecl5) / scaling
+            print ("ALPHA1")
+            print ("Pozitia Originala")
+            print (position)
+            if abs(position) >= test_tong * 1.25:
+                if position >= 0:
+                    position = min (position, max_pos - positions[1])
+                if position < 0:
+                    position = max (position, - max_pos - positions[1])
+                print ("Pozitia Limitata")
+                print (position)
+                positions[1] += position
+                alpha1df.loc[len(alpha1df)] = [timpul_latent, position, closeul]
+                alpha1df.to_csv (r'alpha1.csv')
+                print (positions)
+            else:
+                print ("Nu s-a tranzactionat")
+                position = 0
+    return [position, alpha1df]
+
+# alpha_60_vol (1.02, 12, 2.25)
+def alpha2 (update):
+    global booksize
+    global positions
+    alpha2df = pd.read_csv("alpha2.csv", usecols=range(1,4))
+    position = 0
+    unit = booksize / 12
+    timpul_latent = int(update[['time']].iloc[-3])
+    closeul = float(update[['close']].iloc[-3])
+    ecl60 = float(update[['ema_close_60']].iloc[-3])
+    evl30 = float(update[['ema_volume_30']].iloc[-3])
+    evl360 = float(update[['ema_volume_360']].iloc[-3])
+    if evl30 < 2.25 * evl360:
+        if closeul < ecl60 / 1.02:
+            if positions[2] + 1 <= 12:
+                positions[2] += 1
+                position += unit
+                alpha2df.loc[len(alpha2df)] = [timpul_latent, position, closeul]
+                alpha2df.to_csv(r'alpha2.csv')
+                print(positions)
+        if closeul > ecl60 * 1.02:
+            if positions[2] - 1 >= -12:
+                positions[2] = positions[2] - 1
+                position = position - unit
+                alpha2df.loc[len(alpha2df)] = [timpul_latent, position, closeul]
+                alpha2df.to_csv(r'alpha2.csv')
+                print(positions)
+    return [position, alpha2df]
+
+# alpha_tong (360, 3, 5, 1.0)
+def alpha3 (update):
+    global booksize
+    global positions
+    alpha3df = pd.read_csv("alpha3.csv", usecols=range(1,4))
+    position = 0
+    test_tong = 94.79663551387678
+    scaling = 5 * test_tong / booksize
+    max_pos = booksize
+    test_tong = test_tong / scaling
+    timpul_latent = int(update[['time']].iloc[-3])
+    closeul = float(update[['close']].iloc[-3])
+    ecl3 = float(update[['ema_close_3']].iloc[-3])
+    ml360 = float(update[['min_low_360']].iloc[-3])
+    mh360 = float(update[['max_high_360']].iloc[-3])
+
+    if timpul_latent % 21600 == 0:
+        print ("ALPHA3")
+        position = ((ml360 + mh360) / 2 - ecl3) / scaling
+        print ("Pozitia Originala")
+        print (position)
+        if abs(position) >= test_tong * 1.0:
+            if position >= 0:
+                position = min (position, max_pos - positions[3])
+            if position < 0:
+                position = max (position, - max_pos - positions[3])
+            print ("Pozitia Limitata")
+            print (position)
+            positions[3] += position
+            alpha3df.loc[len(alpha3df)] = [timpul_latent, position, closeul]
+            alpha3df.to_csv (r'alpha3.csv')
+            print (positions)
+        else:
+            print ("Nu s-a tranzactionat")
+            position = 0
+    return [position, alpha3df]
+
 def combo (update):
     global positions
     global weight
-    lista = []
+    lista = [alpha1(update), alpha2(update), alpha3(update)]
     timpul = int(update[['time']].iloc[-1])
     closeul = float(update[['close']].iloc[-1])
     position = 0
