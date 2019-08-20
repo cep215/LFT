@@ -1,28 +1,21 @@
 import os
 import requests
 import datetime
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
 import pandas as pd
 import numpy as np
 import time
 import math
-from lft.db_def import Aggregate, Kraken
+# from lft.db_def import Aggregate, Kraken
+from db_def import Aggregate, Kraken, engine
+from db_def import session, Session
+
+
 import itertools
 
 pd.set_option('display.max_rows', 500)
 pd.set_option('display.max_columns', 500)
 pd.set_option('display.width', 1000)
 
-
-
-
-basedir = os.path.abspath(os.path.dirname(__file__))
-engine = create_engine('sqlite:///' + os.path.join(basedir, 'data.db'), echo=True)
-
-# # create a Session
-Session = sessionmaker(bind=engine)
-session = Session()
 
 period_list = np.array([4320, 1440, 360, 180, 60, 30, 15, 5, 3])
 alpha_list = np.array([0.0001604378647097727291148906149522633583756137707677,
@@ -96,33 +89,28 @@ def create_past_df(db):
 
     ### Calculate min and max target price
     for period in target_period_list:
-        min = df[::-1]['low'].rolling(window=period).min().shift()
-        df['min_target_' + str(period)] = min
-        max = df[::-1]['high'].rolling(window=period).max().shift()
-        df['max_target_' + str(period)] = max
+        df['min_target_' + str(period)] = df[::-1]['low'].rolling (window = period).min().shift()
+        df['max_target_' + str(period)] = df[::-1]['high'].rolling(window = period).max().shift()
 
     ### Calculate min and max target return
     for period in target_period_list:
         df['min_target_return_' + str(period)] = np.log(df['min_target_' + str(period)] / df['close'])
-        df['max_target_return' + str(period)] = np.log(df['max_target_' + str(period)] / df['close'])
+        df['max_target_return'  + str(period)] = np.log(df['max_target_' + str(period)] / df['close'])
 
 
 
     ### Calculate feature true_range = (max-min)/(max+min) for different periods
     for period in period_list:
-        min = df['low'].rolling(window=period).min()
-        df['min_low_'+str(period)] = min
-        max = df['high'].rolling(window=period).max()
-        df['max_high_' + str(period)] = max
-        df['true_range_'+str(period)] = (max-min)/(max+min)
-
-
-
+        min = df['low'].rolling (window = period).min()
+        df['min_low_'    + str(period)] = min
+        max = df['high'].rolling(window = period).max()
+        df['max_high_'   + str(period)] = max
+        df['true_range_' + str(period)] = (max - min) / (max + min)
 
 
     ### Calculate feature log(1 + %returns) ###
 
-    df['avg'] = (df['low'] + df['high']) /2
+    df['avg'] = (df['low'] + df['high']) / 2
 
     # Populate df with log_ret_period
     for period in period_list:
@@ -162,30 +150,30 @@ def create_past_df(db):
         # avgret.excluded.add(0)
         # df['returns_old_' + str(period)] = avgret(df, period, df.index)
 
-        df['rel_volume_returns_'+str(period)] = df['volumeto']/df['ema_volume_'+str(period)]*df['returns_'+str(period)]
+        df['rel_volume_returns_' + str(period)] = df['volumeto'] / df['ema_volume_'+str(period)] * df['returns_'+str(period)]
 
 
 
 
     ### Calculate std_returns
     for period in period_list:
-        df['std_returns_'+str(period)] = df['returns_'+str(period)].rolling(window=period).std()
+        df['std_returns_' + str(period)] = df['returns_' + str(period)].rolling(window = period).std()
 
 
 
     ### Calculate Bollinger Bands
     for (period, alpha) in zip(period_list, alpha_list):
-        df['ema_close_' + str(period)] = df.close.ewm(alpha=alpha, adjust =False).mean()
+        df['ema_close_' + str(period)] = df.close.ewm(alpha = alpha, adjust = False).mean()
         # for index, row in df.iterrows():
         #     if (index > 0):
         #         df['ema_close_'+str(period)].iloc[index] = alpha * df['close'].iloc[index] + (1-alpha) * df['ema_close_'+ str(period)].iloc[index-1]
         #         # df.volumeto.ewm(halflife=period, adjust=False).mean()
         #     else:
         #         df['ema_close_' + str(period)].iloc[index] = df['close'].iloc[index]
-        df['std_close_'+str(period)] = df['close'].rolling(window=period).std()
+        df['std_close_' + str(period)] = df['close'].rolling(window = period).std()
 
-        df['lower_bb_'+str(period)] = df['ema_close_'+str(period)] - 2*df['std_close_'+str(period)]
-        df['upper_bb_'+str(period)] = df['ema_close_'+str(period)] + 2*df['std_close_'+str(period)]
+        df['lower_bb_' + str(period)]  = df['ema_close_' + str(period)] - 2*df['std_close_' + str(period)]
+        df['upper_bb_' + str(period)]  = df['ema_close_' + str(period)] + 2*df['std_close_' + str(period)]
 
 
     # print(df[['lower_bb_60', 'close','upper_bb_60']].tail(100))
@@ -200,4 +188,4 @@ def create_past_df(db):
     return df
 
 # df = create_past_df(Aggregate)
-# print(df[['time', 'avg', 'avg1_360', 'avg2_360', 'returns_5', 'returns_old_5']])
+# print(df[['time', 'avg', 'avg1_360', 'avg2_360', 'returns_5']])

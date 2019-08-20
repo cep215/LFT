@@ -23,8 +23,8 @@ os.system("scp ubuntu@ec2-18-224-69-153.us-east-2.compute.amazonaws.com:~/LFT/lf
 
 #########################################################
 df = create_past_df(Aggregate).iloc[-5000:]
-df = df.reset_index(drop=True)
-df = df.convert_objects(convert_numeric=True)
+df = df.reset_index(drop = True)
+df = df.convert_objects(convert_numeric = True)
 #########################################################
 
 
@@ -171,8 +171,8 @@ def update_df_features(df, symbol, comparison_symbol, exchange):
 
     ### Calculate min and max target return
     for period in target_period_list:
-        df['min_target_return_' + str(period)] = np.log(df['min_target_' + str(period)] / df['close'])
-        df['max_target_return' + str(period)] = np.log(df['max_target_' + str(period)] / df['close'])
+        df['min_target_return_' + str(period)]  = np.log(df['min_target_' + str(period)] / df['close'])
+        df['max_target_return'  + str(period)]  = np.log(df['max_target_' + str(period)] / df['close'])
 
 
     for i in index_null:
@@ -184,8 +184,8 @@ def update_df_features(df, symbol, comparison_symbol, exchange):
             p1 = math.ceil(period / 24)
             p2 = math.ceil(2 / 3 * period / 24)
 
-            df['avg1_' + str(period)] = df['avg'].shift(period - p2 + 1).rolling(p1).mean()
-            df['avg2_' + str(period)] = df['avg'].rolling(p2).mean()
+            df['avg1_'    + str(period)] = df['avg'].shift(period - p2 + 1).rolling(p1).mean()
+            df['avg2_'    + str(period)] = df['avg'].rolling(p2).mean()
 
             df['log_ret_' + str(period)].iloc[i] = np.log(df['avg2_' + str(period)].iloc[i] / df['avg1_' + str(period)].iloc[i])
 
@@ -200,7 +200,7 @@ def update_df_features(df, symbol, comparison_symbol, exchange):
             df['min_low_' + str(period)].iloc[i] = min
             # max = df['high'].rolling(window=period).max()
             max = np.max(df['high'].iloc[(i - period) : i + 1])
-            df['max_high_' + str(period)].iloc[i] = max
+            df['max_high_' + str(period)].iloc[i]   = max
             df['true_range_' + str(period)].iloc[i] = (max - min) / (max + min)
 
         ### Calculate feature rel_volume_returns
@@ -231,7 +231,6 @@ def update_df_features(df, symbol, comparison_symbol, exchange):
 
             df['lower_bb_' + str(period)].iloc[i] = df['ema_close_' + str(period)].iloc[i] - 2 * df['std_close_' + str(period)].iloc[i]
             df['upper_bb_' + str(period)].iloc[i] = df['ema_close_' + str(period)].iloc[i] + 2 * df['std_close_' + str(period)].iloc[i]
-
 
     return df
 
