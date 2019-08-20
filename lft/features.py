@@ -12,7 +12,7 @@ import matplotlib
 matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 
-from lft.init_features import create_past_df, period_list, target_period_list, alpha_list
+from lft.init_features import create_past_df, period_list, target_period_list, alpha_list, delta_steps
     # , log_ret, avg_ret
 from lft.db_def import Aggregate, Kraken
 
@@ -22,7 +22,7 @@ kraken.load_key('/Users/StefanDavid/PycharmProjects/Simulator/venv/kraken.key')
 os.system("scp ubuntu@ec2-18-224-69-153.us-east-2.compute.amazonaws.com:~/LFT/lft/data.db ~/Desktop/LFT/lft/")
 
 #########################################################
-df = create_past_df(Aggregate).iloc[-5000:]
+df = create_past_df(Aggregate).iloc[-50000:]
 df = df.reset_index(drop = True)
 df = df.convert_objects(convert_numeric = True)
 #########################################################
@@ -232,6 +232,11 @@ def update_df_features(df, symbol, comparison_symbol, exchange):
             df['lower_bb_' + str(period)].iloc[i] = df['ema_close_' + str(period)].iloc[i] - 2 * df['std_close_' + str(period)].iloc[i]
             df['upper_bb_' + str(period)].iloc[i] = df['ema_close_' + str(period)].iloc[i] + 2 * df['std_close_' + str(period)].iloc[i]
 
+        for delta, steps in delta_steps:
+            df['past_cl_std_'  + str(delta) + '_' + str(steps) ].iloc[i] = np.std (df['close'][ i - (steps - 1) * delta  : i + 1: delta])
+            df['past_cl_avg_'  + str(delta) + '_' + str(steps) ].iloc[i] = np.mean(df['close'][ i - (steps - 1) * delta  : i + 1: delta])
+
+
     return df
 
 starttime=time.time()
@@ -241,6 +246,7 @@ starttime=time.time()
 booksize = 0.25
 positions = [3, -0.25, 12, -0.12640067] # number of alphas, positions held assuming alphas have each booksize equal to booksize
 weight = [1, 0.4, 0.4, 0.2] # 1, and then the weight of each alpha
+#For
 ###################################################################
 # for i193 in range (1, positions[0] + 1, 1):
 #     alpha.to_csv (r'alpha'+str(i193)+'.csv')

@@ -30,53 +30,15 @@ alpha_list = np.array([0.0001604378647097727291148906149522633583756137707677,
 target_period_list = np.array([360, 300, 240, 180, 120, 60, 30, 15, 10, 5, 3])
 
 
+
+delta_steps = [(1440, 10), (1440, 6), (1440, 4), (720, 20), (720, 15), (720, 10), (720, 8 ), (720, 3), (360, 15), (180, 30), (180, 3)]
+
 def get_pandas(db):
     query = session.query(db).order_by(db.time)
     df = pd.read_sql(query.statement, session.bind)
     return df
 
 
-# # Getting the average price for interval (start, start+period)
-# def get_avg(df, start, period):
-#     avg = df['avg'].iloc[start:(start + period)].mean(axis=0)
-#     if (period != 0):
-#         return avg
-#     else:
-#         return 1
-#
-#
-# # Calculate log_ret for a period
-# def log_ret(df, period, index):
-#
-#     p1 = math.ceil(period / 24)
-#     p2 = math.ceil(2 / 3 * period / 24)
-#     if (index - period > 0):
-#         avg_1 = get_avg(df, index - period, p1)
-#         avg_2 = get_avg(df, index - p2 + 1, p2)
-#     else:
-#         avg_1 = 1
-#         avg_2 = 1
-#
-#     if (avg_1 != 0):
-#         return math.log(avg_2/avg_1)
-#     else:
-#         return 0
-#
-# def avg_ret(df, period, index):
-#
-#     p1 = math.ceil(period / 24)
-#     p2 = math.ceil(2 / 3 * period / 24)
-#     if (index - period > 0):
-#         avg_1 = get_avg(df, index - period, p1)
-#         avg_2 = get_avg(df, index - p2 + 1, p2)
-#         # print(avg_1, avg_2)
-#     else:
-#         avg_1 = 1
-#         avg_2 = 1
-#     if (avg_1 != 0):
-#         return (avg_2 - avg_1)/avg_1
-#     else :
-#         return 0
 
 
 
@@ -132,7 +94,7 @@ def create_past_df(db):
 
     ### Calculate feature rel_volume_returns
     for (period, alpha) in zip(period_list, alpha_list):
-        df['ema_volume_' + str(period)] = df.volumeto.ewm(alpha=alpha, adjust =False).mean()
+        df['ema_volume_' + str(period)] = df.volumeto.ewm(alpha = alpha, adjust =False).mean()
         df['returns_' + str(period)] = (df['avg2_' + str(period)] - df['avg1_' + str(period)]) / df['avg1_' + str(period)]
         # Calculate ema for different spans
         # for index, row in df.iterrows():
@@ -176,7 +138,18 @@ def create_past_df(db):
         df['upper_bb_' + str(period)]  = df['ema_close_' + str(period)] + 2*df['std_close_' + str(period)]
 
 
-    # print(df[['lower_bb_60', 'close','upper_bb_60']].tail(100))
+
+    ###Calculate CPS mean std on delta_steps
+
+    for delta, steps in delta_steps:
+
+        df['past_cl_std_' + str(delta) + '_' + str(steps)]  = np.nan
+        df['past_cl_avg_' + str(delta) + '_' + str(steps)]  = np.nan
+
+        for mod in range(delta):
+            df.loc[ mod : : delta, 'past_cl_std_' + str(delta) + '_' + str(steps) ] = df['close'][ mod : : delta].rolling( window = steps).std()
+            df.loc[ mod : : delta, 'past_cl_avg_' + str(delta) + '_' + str(steps) ] = df['close'][ mod : : delta].rolling( window = steps).mean()
+
 
     # print(df['high'].iloc[5000], df['low'].iloc[5000], df['avg'].iloc[5000])
     # print(df['high'].iloc[5005], df['low'].iloc[5005], df['avg'].iloc[5005])
@@ -184,6 +157,12 @@ def create_past_df(db):
     # avg_ret(df, 5, 5005)
     # print(avg_ret(df, 5, 5005))
     # print(df['returns_5'].iloc[5005])
+
+
+    ###Create a Closing Price vector in increments of delta minutes and in number of nb_closes
+    #df[::-delta].iloc[:delta]
+
+
 
     return df
 
