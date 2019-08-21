@@ -12,7 +12,7 @@ def insert_df_aggregate(df):
     # Create objects
     for index, row in df.iterrows():
         # access data using column names]
-        item = session.query(Aggregate).filter_by(time = row['time']).first()
+        item = session.query(Aggregate).filter_by( time = row['time']).first()
         if (item is None):
 
             agg = Aggregate(row['time'], row['close'], row['high'], row['low'],
@@ -28,7 +28,7 @@ def insert_df_kraken(df):
     # Create objects
     for index, row in df.iterrows():
         # access data using column names
-        item = session.query(Kraken).filter_by(time = row['time']).first()
+        item = session.query(Kraken).filter_by( time = row['time']).first()
         if (item is None):
             krk = Kraken(row['time'], row['close'], row['high'], row['low'],
                          row['open'], row['volumefrom'], row['volumeto'])

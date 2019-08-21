@@ -16,10 +16,7 @@ from lft.init_features import create_past_df, period_list, target_period_list, a
     # , log_ret, avg_ret
 from lft.db_def import Aggregate, Kraken
 
-kraken = krakenex.API()
-kraken.load_key('/Users/StefanDavid/PycharmProjects/Simulator/venv/kraken.key')
-
-os.system("scp ubuntu@ec2-18-224-69-153.us-east-2.compute.amazonaws.com:~/LFT/lft/data.db ~/Desktop/LFT/lft/")
+os.system("scp cata@vps720456.ovh.net:~/LFT/lft/data.db ~/Desktop/LFT/lft/")
 
 #########################################################
 df = create_past_df(Aggregate).iloc[-50000:]
@@ -28,7 +25,10 @@ df = df.convert_objects(convert_numeric = True)
 #########################################################
 
 
-# df.to_csv("Stefan_Test.csv")
+df.to_csv("Stefan_Test.csv")
+
+
+
 
 
 def compute_pnl (strategy, starttime, endtime, pretzul, taker_fee):
@@ -164,9 +164,9 @@ def update_df_features(df, symbol, comparison_symbol, exchange):
 
     ### Calculate target_price
     for period in target_period_list:
-        min = df[::-1]['low'].rolling(window=period).min().shift()
+        min = df[::-1]['low'].rolling ( window = period).min().shift()
         df['min_target_' + str(period)] = min
-        max = df[::-1]['high'].rolling(window=period).max().shift()
+        max = df[::-1]['high'].rolling( window = period).max().shift()
         df['max_target_' + str(period)] = max
 
     ### Calculate min and max target return
@@ -233,7 +233,7 @@ def update_df_features(df, symbol, comparison_symbol, exchange):
             df['upper_bb_' + str(period)].iloc[i] = df['ema_close_' + str(period)].iloc[i] + 2 * df['std_close_' + str(period)].iloc[i]
 
         for delta, steps in delta_steps:
-            df['past_cl_std_'  + str(delta) + '_' + str(steps) ].iloc[i] = np.std (df['close'][ i - (steps - 1) * delta  : i + 1: delta])
+            df['past_cl_std_'  + str(delta) + '_' + str(steps) ].iloc[i] = np.nanstd ( np.log( np.array(df['close'][ i - (steps - 1) * delta  : i + 1: delta]) / np.array(df['close'][ i - (steps - 1) * delta  : i + 1: delta].shift(1)) ))
             df['past_cl_avg_'  + str(delta) + '_' + str(steps) ].iloc[i] = np.mean(df['close'][ i - (steps - 1) * delta  : i + 1: delta])
 
 

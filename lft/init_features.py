@@ -31,7 +31,7 @@ target_period_list = np.array([360, 300, 240, 180, 120, 60, 30, 15, 10, 5, 3])
 
 
 
-delta_steps = [(1440, 10), (1440, 6), (1440, 4), (720, 20), (720, 15), (720, 10), (720, 8 ), (720, 3), (360, 15), (180, 30), (180, 3)]
+delta_steps = [(1440, 10), (1440, 6), (1440, 4), (720, 20), (720, 15), (720, 10), (720, 8), (720, 3), (360, 15), (180, 30), (180, 3)]
 
 def get_pandas(db):
     query = session.query(db).order_by(db.time)
@@ -140,15 +140,14 @@ def create_past_df(db):
 
 
     ###Calculate CPS mean std on delta_steps
-
     for delta, steps in delta_steps:
 
         df['past_cl_std_' + str(delta) + '_' + str(steps)]  = np.nan
         df['past_cl_avg_' + str(delta) + '_' + str(steps)]  = np.nan
 
         for mod in range(delta):
-            df.loc[ mod : : delta, 'past_cl_std_' + str(delta) + '_' + str(steps) ] = df['close'][ mod : : delta].rolling( window = steps).std()
-            df.loc[ mod : : delta, 'past_cl_avg_' + str(delta) + '_' + str(steps) ] = df['close'][ mod : : delta].rolling( window = steps).mean()
+            df.loc[ mod : : delta, 'past_cl_std_' + str(delta) + '_' + str(steps) ] = (np.log(df['close'][ mod : : delta] / df['close'][ mod : : delta].shift(1) )).rolling( window = steps - 1).std(ddof = 0)
+            df.loc[ mod : : delta, 'past_cl_avg_' + str(delta) + '_' + str(steps) ] =  df['close'][ mod : : delta].rolling( window = steps).mean()
 
 
     # print(df['high'].iloc[5000], df['low'].iloc[5000], df['avg'].iloc[5000])
