@@ -12,21 +12,23 @@ import matplotlib
 matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 
-from init_features import create_past_df, period_list, target_period_list, alpha_list, log_ret, avg_ret
-from db_def import Aggregate, Kraken
+from lft.init_features import create_past_df, period_list, target_period_list, alpha_list, delta_steps
+from lft.db_def import Aggregate, Kraken
 
-kraken = krakenex.API()
-kraken.load_key('/Users/StefanDavid/PycharmProjects/Simulator/venv/kraken.key')
 
-os.system("scp ubuntu@ec2-18-224-69-153.us-east-2.compute.amazonaws.com:~/LFT/lft/data.db ~/Desktop/LFT/lft/")
+os.system("scp cata@vps720456.ovh.net:~/LFT/lft/data.db ~/Desktop/LFT/lft/")
 
 #########################################################
-df = create_past_df(Aggregate).iloc[-5000:]
-df = df.convert_objects(convert_numeric=True)
+df = create_past_df(Aggregate).iloc[-50000:]
+df = df.reset_index(drop = True)
+df = df.convert_objects(convert_numeric = True)
 #########################################################
 
 
-# df.to_csv("Stefan_Test.csv")
+df.to_csv("Stefan_Test.csv")
+
+
+
 
 
 def compute_pnl (strategy, starttime, endtime, pretzul, taker_fee):
@@ -158,22 +160,22 @@ def update_df_features(df, symbol, comparison_symbol, exchange):
     df = update_df(df, symbol, comparison_symbol, exchange)
 
 
-    index = df[df['avg'].isnull()].index
+    index_null = df[df['avg'].isnull()].index
 
     ### Calculate target_price
     for period in target_period_list:
-        min = df[::-1]['low'].rolling(window=period).min().shift()
+        min = df[::-1]['low'].rolling ( window = period).min().shift()
         df['min_target_' + str(period)] = min
-        max = df[::-1]['high'].rolling(window=period).max().shift()
+        max = df[::-1]['high'].rolling( window = period).max().shift()
         df['max_target_' + str(period)] = max
 
     ### Calculate min and max target return
     for period in target_period_list:
-        df['min_target_return_' + str(period)] = np.log(df['min_target_' + str(period)] / df['close'])
-        df['max_target_return' + str(period)] = np.log(df['max_target_' + str(period)] / df['close'])
+        df['min_target_return_' + str(period)]  = np.log(df['min_target_' + str(period)] / df['close'])
+        df['max_target_return'  + str(period)]  = np.log(df['max_target_' + str(period)] / df['close'])
 
 
-    for i in index:
+    for i in index_null:
 
 
         ### Calculate log_ret
@@ -182,8 +184,8 @@ def update_df_features(df, symbol, comparison_symbol, exchange):
             p1 = math.ceil(period / 24)
             p2 = math.ceil(2 / 3 * period / 24)
 
-            df['avg1_' + str(period)] = df['avg'].shift(period - p2 + 1).rolling(p1).mean()
-            df['avg2_' + str(period)] = df['avg'].rolling(p2).mean()
+            df['avg1_'    + str(period)] = df['avg'].shift(period - p2 + 1).rolling(p1).mean()
+            df['avg2_'    + str(period)] = df['avg'].rolling(p2).mean()
 
             df['log_ret_' + str(period)].iloc[i] = np.log(df['avg2_' + str(period)].iloc[i] / df['avg1_' + str(period)].iloc[i])
 
@@ -198,7 +200,7 @@ def update_df_features(df, symbol, comparison_symbol, exchange):
             df['min_low_' + str(period)].iloc[i] = min
             # max = df['high'].rolling(window=period).max()
             max = np.max(df['high'].iloc[(i - period) : i + 1])
-            df['max_high_' + str(period)].iloc[i] = max
+            df['max_high_' + str(period)].iloc[i]   = max
             df['true_range_' + str(period)].iloc[i] = (max - min) / (max + min)
 
         ### Calculate feature rel_volume_returns
@@ -230,6 +232,10 @@ def update_df_features(df, symbol, comparison_symbol, exchange):
             df['lower_bb_' + str(period)].iloc[i] = df['ema_close_' + str(period)].iloc[i] - 2 * df['std_close_' + str(period)].iloc[i]
             df['upper_bb_' + str(period)].iloc[i] = df['ema_close_' + str(period)].iloc[i] + 2 * df['std_close_' + str(period)].iloc[i]
 
+        for delta, steps in delta_steps:
+            df['past_cl_std_'  + str(delta) + '_' + str(steps) ].iloc[i] = np.nanstd ( np.log( np.array(df['close'][ i - (steps - 1) * delta  : i + 1: delta]) / np.array(df['close'][ i - (steps - 1) * delta  : i + 1: delta].shift(1)) ))
+            df['past_cl_avg_'  + str(delta) + '_' + str(steps) ].iloc[i] = np.mean(df['close'][ i - (steps - 1) * delta  : i + 1: delta])
+
 
     return df
 
@@ -237,18 +243,124 @@ starttime=time.time()
 
 ###################    GLOBAL BOOK VARIABLES    ###################
 # In combo function modify "lista" for new alphas
-booksize = 0.0
-positions = [] # number of alphas, positions held assuming alphas have each booksize equal to booksize
-weight = [] # 1, and then the weight of each alpha
+booksize = 0.25
+positions = [3, -0.25, 12, -0.12640067] # number of alphas, positions held assuming alphas have each booksize equal to booksize
+weight = [1, 0.4, 0.4, 0.2] # 1, and then the weight of each alpha
+#For
 ###################################################################
 # for i193 in range (1, positions[0] + 1, 1):
 #     alpha.to_csv (r'alpha'+str(i193)+'.csv')
     # positions.append(0)
 
+# alpha_tong_vol (180, 5, 3, 1.25)
+def alpha1 (update):
+    global booksize
+    global positions
+    alpha1df = pd.read_csv("alpha1.csv", usecols=range(1,4))
+    position = 0
+    test_tong = 57.82911125091462
+    scaling = 3 * test_tong / booksize
+    max_pos = booksize
+    test_tong = test_tong / scaling
+    timpul_latent = int(update[['time']].iloc[-3])
+    closeul = float(update[['close']].iloc[-3])
+    ecl5 = float(update[['ema_close_5']].iloc[-3])
+    evl30 = float(update[['ema_volume_30']].iloc[-3])
+    evl360 = float(update[['ema_volume_360']].iloc[-3])
+    ml180 = float(update[['min_low_180']].iloc[-3])
+    mh180 = float(update[['max_high_180']].iloc[-3])
+    if evl30 < 2.25 * evl360:
+        if timpul_latent % 10800 == 0:
+            position = ((ml180 + mh180) / 2 - ecl5) / scaling
+            print ("ALPHA1")
+            print ("Pozitia Originala")
+            print (position)
+            if abs(position) >= test_tong * 1.25:
+                if position >= 0:
+                    position = min (position, max_pos - positions[1])
+                if position < 0:
+                    position = max (position, - max_pos - positions[1])
+                print ("Pozitia Limitata")
+                print (position)
+                positions[1] += position
+                alpha1df.loc[len(alpha1df)] = [timpul_latent, position, closeul]
+                alpha1df.to_csv (r'alpha1.csv')
+                print (positions)
+            else:
+                print ("Nu s-a tranzactionat")
+                position = 0
+    return [position, alpha1df]
+
+# alpha_60_vol (1.02, 12, 2.25)
+def alpha2 (update):
+    global booksize
+    global positions
+    alpha2df = pd.read_csv("alpha2.csv", usecols=range(1,4))
+    position = 0
+    unit = booksize / 12
+    timpul_latent = int(update[['time']].iloc[-3])
+    closeul = float(update[['close']].iloc[-3])
+    ecl60 = float(update[['ema_close_60']].iloc[-3])
+    evl30 = float(update[['ema_volume_30']].iloc[-3])
+    evl360 = float(update[['ema_volume_360']].iloc[-3])
+    if evl30 < 2.25 * evl360:
+        if closeul < ecl60 / 1.02:
+            if positions[2] + 1 <= 12:
+                positions[2] += 1
+                position += unit
+                alpha2df.loc[len(alpha2df)] = [timpul_latent, position, closeul]
+                alpha2df.to_csv(r'alpha2.csv')
+                print(positions)
+        if closeul > ecl60 * 1.02:
+            if positions[2] - 1 >= -12:
+                positions[2] = positions[2] - 1
+                position = position - unit
+                alpha2df.loc[len(alpha2df)] = [timpul_latent, position, closeul]
+                alpha2df.to_csv(r'alpha2.csv')
+                print(positions)
+    return [position, alpha2df]
+
+# alpha_tong (360, 3, 5, 1.0)
+def alpha3 (update):
+    global booksize
+    global positions
+    alpha3df = pd.read_csv("alpha3.csv", usecols=range(1,4))
+    position = 0
+    test_tong = 94.79663551387678
+    scaling = 5 * test_tong / booksize
+    max_pos = booksize
+    test_tong = test_tong / scaling
+    timpul_latent = int(update[['time']].iloc[-3])
+    closeul = float(update[['close']].iloc[-3])
+    ecl3 = float(update[['ema_close_3']].iloc[-3])
+    ml360 = float(update[['min_low_360']].iloc[-3])
+    mh360 = float(update[['max_high_360']].iloc[-3])
+
+    if timpul_latent % 21600 == 0:
+        print ("ALPHA3")
+        position = ((ml360 + mh360) / 2 - ecl3) / scaling
+        print ("Pozitia Originala")
+        print (position)
+        if abs(position) >= test_tong * 1.0:
+            if position >= 0:
+                position = min (position, max_pos - positions[3])
+            if position < 0:
+                position = max (position, - max_pos - positions[3])
+            print ("Pozitia Limitata")
+            print (position)
+            positions[3] += position
+            alpha3df.loc[len(alpha3df)] = [timpul_latent, position, closeul]
+            alpha3df.to_csv (r'alpha3.csv')
+            print (positions)
+        else:
+            print ("Nu s-a tranzactionat")
+            position = 0
+    return [position, alpha3df]
+
 def combo (update):
     global positions
     global weight
-    lista = []
+    lista = [alpha1(update), alpha2(update), alpha3(update)]
     timpul = int(update[['time']].iloc[-1])
     closeul = float(update[['close']].iloc[-1])
     position = 0
