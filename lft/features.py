@@ -12,9 +12,8 @@ import matplotlib
 matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 
-from lft.init_features import create_past_df, period_list, target_period_list, alpha_list
-    # , log_ret, avg_ret
-from lft.db_def import Aggregate, Kraken
+from init_features import create_past_df, period_list, target_period_list, alpha_list, log_ret, avg_ret
+from db_def import Aggregate, Kraken
 
 kraken = krakenex.API()
 kraken.load_key('/Users/StefanDavid/PycharmProjects/Simulator/venv/kraken.key')
@@ -22,7 +21,7 @@ kraken.load_key('/Users/StefanDavid/PycharmProjects/Simulator/venv/kraken.key')
 os.system("scp ubuntu@ec2-18-224-69-153.us-east-2.compute.amazonaws.com:~/LFT/lft/data.db ~/Desktop/LFT/lft/")
 
 #########################################################
-df = create_past_df(Aggregate).iloc[-40000:]
+df = create_past_df(Aggregate).iloc[-5000:]
 df = df.convert_objects(convert_numeric=True)
 #########################################################
 
@@ -290,5 +289,5 @@ while True:
     combo (df)
     ##############################
     df = df.iloc[1:]
-    # print(df[['time', 'close', 'avg', 'avg1_5', 'avg2_5', 'returns_5', 'log_ret_360']])
+    print(df[['time', 'close', 'avg', 'avg1_5', 'avg2_5', 'returns_5', 'log_ret_360']])
     time.sleep(60.0 - ((time.time() - starttime) % 60.0))

@@ -7,7 +7,7 @@ import pandas as pd
 import numpy as np
 import time
 import math
-from lft.db_def import Aggregate, Kraken
+from db_def import Aggregate, Kraken
 import itertools
 
 pd.set_option('display.max_rows', 500)
