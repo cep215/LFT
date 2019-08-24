@@ -34,6 +34,7 @@ delta_steps = [(1440, 10), (1440, 6), (1440, 4), (720, 20), (720, 15), (720, 10)
 def get_pandas(db):
     query = session.query(db).filter_by(from_currency='BTC').filter_by(to_currency='USD').order_by(db.time)
     df = pd.read_sql(query.statement, session.bind)
+    df = df.reset_index(drop=True)
     return df
 
 
@@ -163,5 +164,5 @@ def create_past_df(db):
 
     return df
 
-# df = create_past_df(Aggregate)
-# print(df[['time', 'avg', 'avg1_360', 'avg2_360', 'returns_5']])
+df = create_past_df(Aggregate)
+print(df[['time', 'avg', 'avg1_360', 'avg2_360', 'returns_5']])

@@ -2,15 +2,15 @@ import os
 import requests
 import datetime
 import pandas as pd
-from lft.db_def import Aggregate, Kraken, engine
-from lft.db_def import session, Session
+from db_def import Aggregate, Kraken, engine
+from db_def import session, Session
 
 
 
 def minute_price_historical(symbol, comparison_symbol, exchange):
     # If possible returns a Dataframe for the last 5 minutes
     url = 'https://min-api.cryptocompare.com/data/histominute?fsym={}&tsym={' \
-          '}&limit=20'\
+          '}&limit=5'\
             .format(symbol.upper(), comparison_symbol.upper())
     if exchange:
         url += '&e={}'.format(exchange)
@@ -128,7 +128,6 @@ def populate():
     insert_df_aggregate(df_aggregate_bch, 'BCH', 'USD')
     insert_df_aggregate(df_aggregate_bnb, 'BNB', 'USD')
     insert_df_aggregate(df_aggregate_bsv, 'BSV', 'USD')
-    insert_df_aggregate(df_aggregate_dash, 'DASH', 'USD')
     insert_df_aggregate(df_aggregate_eos, 'EOS', 'USD')
     insert_df_aggregate(df_aggregate_leo, 'LEO', 'USD')
     insert_df_aggregate(df_aggregate_eth, 'ETH', 'USD')
@@ -180,7 +179,6 @@ def populate():
     insert_df_kraken(df_kraken_ada, 'ADA', 'USD')
     insert_df_kraken(df_kraken_bch, 'BCH', 'USD')
     insert_df_kraken(df_kraken_bsv, 'BSV', 'USD')
-    insert_df_kraken(df_kraken_dash, 'DASH', 'USD')
     insert_df_kraken(df_kraken_eos, 'EOS', 'USD')
     insert_df_kraken(df_kraken_eth, 'ETH', 'USD')
     insert_df_kraken(df_kraken_ltc, 'LTC', 'USD')
