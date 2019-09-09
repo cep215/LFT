@@ -6,8 +6,8 @@ import numpy as np
 import time
 import math
 # from lft.db_def import Aggregate, Kraken
-from db_def import Aggregate, Kraken, engine
-from db_def import session, Session
+from lft.db_def import Aggregate, Kraken, engine
+from lft.db_def import session, Session
 
 
 pd.set_option('display.max_rows', 500)
@@ -15,30 +15,24 @@ pd.set_option('display.max_columns', 500)
 pd.set_option('display.width', 1000)
 
 
-period_list = np.array([4320, 1440, 360, 180, 60, 30, 15, 5, 3])
-alpha_list = np.array([0.0001604378647097727291148906149522633583756137707677,
-                       0.0004812363773337404152339813311276645785804424248118,
-                       0.0019235564243712611519494261654683301193732902289814,
-                       0.0038434127794247823525750865784463128371033701119830,
-                       0.0114859796471038646431324950617078895151506682298763,
-                       0.0228400315657540450673018538223454763336870612521282,
-                       0.0451583960895834489591009252793566572465208960832665,
-                       0.1294494367038758608637299825202539010208745756519969,
-                       0.2062994740159002626241471803638458698042533360500734])
+period_list = np.array([4320, 1440, 720, 360, 180, 60, 30, 15, 5, 3])
+ema_close_period_list = np.array([57600, 28800, 14400, 7200])
+
 target_period_list = np.array([360, 300, 240, 180, 120, 60, 30, 15, 10, 5, 3])
 
-
-
 delta_steps = [(1440, 10), (1440, 6), (1440, 4), (720, 20), (720, 15), (720, 10), (720, 8), (720, 3), (360, 15), (180, 30), (180, 3)]
+
+def get_alpha_value(period):
+    return round(1 - math.exp(math.log(0.5)/period), 50)
+
+
+
 
 def get_pandas(db):
     query = session.query(db).filter_by(from_currency='BTC').filter_by(to_currency='USD').order_by(db.time)
     df = pd.read_sql(query.statement, session.bind)
     df = df.reset_index(drop=True)
     return df
-
-
-
 
 
 def create_past_df(db):
@@ -82,35 +76,11 @@ def create_past_df(db):
         df['log_ret_' + str(period)] = np.log(df['avg2_' + str(period)] / df['avg1_' + str(period)])
 
 
-    # for period in period_list:
-    #     df['log_ret_old_'+str(period)] = 0
-    #     logret = np.vectorize(log_ret)
-    #     #do not vectorize on df
-    #     logret.excluded.add(0)
-    #     df['log_ret_old_' + str(period)] = logret(df, period, df.index)
-
-
 
     ### Calculate feature rel_volume_returns
-    for (period, alpha) in zip(period_list, alpha_list):
-        df['ema_volume_' + str(period)] = df.volumeto.ewm(alpha = alpha, adjust =False).mean()
+    for period in period_list:
+        df['ema_volume_' + str(period)] = df.volumeto.ewm(alpha = get_alpha_value(period), adjust =False).mean()
         df['returns_' + str(period)] = (df['avg2_' + str(period)] - df['avg1_' + str(period)]) / df['avg1_' + str(period)]
-        # Calculate ema for different spans
-        # for index, row in df.iterrows():
-        #     if (index > 0):
-        #         df['ema_volume_'+str(period)].iloc[index] = \
-        #             alpha * df['volumeto'].iloc[index] + \
-        #             (1-alpha) * df['ema_volume_'+ str(period)].iloc[index-1]
-        #         # df.volumeto.ewm(halflife=period, adjust=False).mean()
-        #     else:
-        #         df['ema_volume_' + str(period)].iloc[index] = df['volumeto'].iloc[index]
-
-        # Calculate returns on different periods
-        # df['returns_old_' + str(period)] = 0
-        # avgret = np.vectorize(avg_ret)
-        # avgret.excluded.add(0)
-        # df['returns_old_' + str(period)] = avgret(df, period, df.index)
-
         df['rel_volume_returns_' + str(period)] = df['volumeto'] / df['ema_volume_'+str(period)] * df['returns_'+str(period)]
 
 
@@ -121,18 +91,15 @@ def create_past_df(db):
         df['std_returns_' + str(period)] = df['returns_' + str(period)].rolling(window = period).std()
 
 
+    ### EMA_close + DEMA_close
+    for period in np.union1d(ema_close_period_list, period_list):
+        df['ema_close_' + str(period)] = df['close'].ewm(alpha = get_alpha_value(period), adjust = False).mean()
+        df['ema_ema_'   + str(period)] = df['ema_close_' + str(period)].ewm(alpha=get_alpha_value(period), adjust=False).mean()
+        df['dema_'      + str(period)] = 2 * df['ema_close_' + str(period)] - df['ema_ema_'+ str(period)]
 
     ### Calculate Bollinger Bands
-    for (period, alpha) in zip(period_list, alpha_list):
-        df['ema_close_' + str(period)] = df.close.ewm(alpha = alpha, adjust = False).mean()
-        # for index, row in df.iterrows():
-        #     if (index > 0):
-        #         df['ema_close_'+str(period)].iloc[index] = alpha * df['close'].iloc[index] + (1-alpha) * df['ema_close_'+ str(period)].iloc[index-1]
-        #         # df.volumeto.ewm(halflife=period, adjust=False).mean()
-        #     else:
-        #         df['ema_close_' + str(period)].iloc[index] = df['close'].iloc[index]
+    for period in period_list:
         df['std_close_' + str(period)] = df['close'].rolling(window = period).std()
-
         df['lower_bb_' + str(period)]  = df['ema_close_' + str(period)] - 2*df['std_close_' + str(period)]
         df['upper_bb_' + str(period)]  = df['ema_close_' + str(period)] + 2*df['std_close_' + str(period)]
 
@@ -165,4 +132,4 @@ def create_past_df(db):
     return df
 
 df = create_past_df(Aggregate)
-print(df[['time', 'avg', 'avg1_360', 'avg2_360', 'returns_5']])
+print(df[['time', 'avg', 'ema_close_57600', 'ema_ema_57600', 'dema_57600']])

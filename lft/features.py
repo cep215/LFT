@@ -12,7 +12,7 @@ import matplotlib
 matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 
-from lft.init_features import create_past_df, period_list, target_period_list, alpha_list, delta_steps
+from lft.init_features import create_past_df, period_list, target_period_list, delta_steps, ema_close_period_list, get_alpha_value
 from lft.db_def import Aggregate, Kraken
 
 
@@ -204,9 +204,9 @@ def update_df_features(df, symbol, comparison_symbol, exchange):
             df['true_range_' + str(period)].iloc[i] = (max - min) / (max + min)
 
         ### Calculate feature rel_volume_returns
-        for (period, alpha) in zip(period_list, alpha_list):
+        for period in period_list:
             # Calculate ema for different spans
-            df['ema_volume_' + str(period)].iloc[i] = alpha * df['volumeto'].iloc[i] + (1-alpha) * df['ema_volume_'+ str(period)].iloc[i - 1]
+            df['ema_volume_' + str(period)].iloc[i] = get_alpha_value(period) * df['volumeto'].iloc[i] + (1-get_alpha_value(period)) * df['ema_volume_'+ str(period)].iloc[i - 1]
 
             # Calculate returns on different periods
             # df['returns_' + str(period)].iloc[i] = df['close'].pct_change(periods=period)
@@ -223,12 +223,15 @@ def update_df_features(df, symbol, comparison_symbol, exchange):
             # df['std_returns_' + str(period)].iloc[index] = df['returns_' + str(period)].rolling(window=period).std()
             df['std_returns_' + str(period)].iloc[i] = np.std(df['returns_' + str(period)].iloc[(i - period) : i + 1])
 
-        ### Calculate Bollinger Bands
-        for (period, alpha) in zip(period_list, alpha_list):
-            df['ema_close_' + str(period)].iloc[i] = alpha * df['close'].iloc[i] + (1 - alpha) * df['ema_close_' + str(period)].iloc[i - 1]
-            # df['std_close_' + str(period)].iloc[index] = df['close'].rolling(window=period).std()
-            df['std_close_' + str(period)].iloc[i] = np.std(df['close'].iloc[(i - period) : i + 1])
+        ### EMA_close + DEMA_close
+        for period in np.union1d(ema_close_period_list + period_list):
+            df['ema_close_' + str(period)].iloc[i] = get_alpha_value(period) * df['close'].iloc[i] + (1 - get_alpha_value(period)) * df['ema_close_' + str(period)].iloc[i - 1]
+            df['ema_ema_'   + str(period)].iloc[i] = get_alpha_value(period) * df['ema_close_' + str(period)].iloc[i] + (1 - get_alpha_value(period)) * df['ema_ema_' + str(period)].iloc[i - 1]
+            df['dema_'      + str(period)].iloc[i] = 2 * df['ema_close_' + str(period)].iloc[i] - df['ema_ema_' + str(period)].iloc[i]
 
+        ### Calculate Bollinger Bands
+        for period in period_list:
+            df['std_close_' + str(period)].iloc[i] = np.std(df['close'].iloc[(i - period) : i + 1])
             df['lower_bb_' + str(period)].iloc[i] = df['ema_close_' + str(period)].iloc[i] - 2 * df['std_close_' + str(period)].iloc[i]
             df['upper_bb_' + str(period)].iloc[i] = df['ema_close_' + str(period)].iloc[i] + 2 * df['std_close_' + str(period)].iloc[i]
 
