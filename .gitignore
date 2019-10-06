@@ -1,0 +1,19 @@
+lft/data_amazon.db
+.idea/LFT.iml
+.idea/codeStyles/
+.idea/encodings.xml
+.idea/misc.xml
+.idea/modules.xml
+.idea/other.xml
+.idea/workspace.xml
+commands ssh.rtf
+lft/__pycache__/
+lft/data.db
+lft/historical_data/
+lft/kraken.key
+lft/kraken_api
+lft/test.py
+lft/test_data.py
+lft/th/
+tables.txt
+venv/

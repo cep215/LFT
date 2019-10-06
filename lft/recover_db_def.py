@@ -5,7 +5,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
 basedir = os.path.abspath(os.path.dirname(__file__))
-engine  = create_engine('sqlite:///' + os.path.join(basedir, 'data.db'), echo = True)
+engine  = create_engine('sqlite:///' + os.path.join(basedir, 'data_amazon.db'), echo = True)
 Base    = declarative_base()
 
 

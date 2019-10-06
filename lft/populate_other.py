@@ -7,9 +7,6 @@ from db_def import session, Session
 
 
 def insert_df_aggregate(df, from_currency, to_currency):
-
-
-    # Create objects
     for index, row in df.iterrows():
         # access data using column names]
         item = session.query(Aggregate).filter_by(from_currency=from_currency).filter_by(to_currency=to_currency).filter_by(time=row['time']).first()
@@ -18,6 +15,16 @@ def insert_df_aggregate(df, from_currency, to_currency):
             agg = Aggregate(row['time'], row['close'], row['high'], row['low'],
                             row['open'], row['volumefrom'], row['volumeto'], from_currency=from_currency, to_currency=to_currency)
             session.add(agg)
+        # check back in time to see if volume of transactions increased
+        else:
+            item.close      = row['close']
+            item.high       = row['high']
+            item.low        = row['low']
+            item.open       = row['open']
+            item.volumefrom = row['volumefrom']
+            item.volumeto   = row['volumeto']
+
+
     # commit the record to the database
     session.commit()
 
@@ -33,6 +40,15 @@ def insert_df_kraken(df, from_currency, to_currency):
             krk = Kraken(row['time'], row['close'], row['high'], row['low'],
                          row['open'], row['volumefrom'], row['volumeto'], from_currency=from_currency, to_currency=to_currency)
             session.add(krk)
+        # check back in time to see if volume of transactions increased
+        else:
+            item.close      = row['close']
+            item.high       = row['high']
+            item.low        = row['low']
+            item.open       = row['open']
+            item.volumefrom = row['volumefrom']
+            item.volumeto   = row['volumeto']
+
     # commit the record to the database
     session.commit()
 
@@ -202,4 +218,3 @@ def populate():
 
 
 populate()
-
