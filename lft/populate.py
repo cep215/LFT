@@ -10,7 +10,7 @@ from db_def import session, Session
 def minute_price_historical(symbol, comparison_symbol, exchange):
     # If possible returns a Dataframe for the last 5 minutes
     url = 'https://min-api.cryptocompare.com/data/histominute?fsym={}&tsym={' \
-          '}&limit=5'\
+          '}&limit=2000'\
             .format(symbol.upper(), comparison_symbol.upper())
     if exchange:
         url += '&e={}'.format(exchange)

@@ -29,30 +29,6 @@ def insert_df_aggregate(df, from_currency, to_currency):
     session.commit()
 
 
-def insert_df_kraken(df, from_currency, to_currency):
-
-
-    # Create objects
-    for index, row in df.iterrows():
-        # access data using column names
-        item = session.query(Kraken).filter_by(from_currency=from_currency).filter_by(to_currency=to_currency).filter_by(time=row['time']).first()
-        if (item is None):
-            krk = Kraken(row['time'], row['close'], row['high'], row['low'],
-                         row['open'], row['volumefrom'], row['volumeto'], from_currency=from_currency, to_currency=to_currency)
-            session.add(krk)
-        # check back in time to see if volume of transactions increased
-        else:
-            item.close      = row['close']
-            item.high       = row['high']
-            item.low        = row['low']
-            item.open       = row['open']
-            item.volumefrom = row['volumefrom']
-            item.volumeto   = row['volumeto']
-
-    # commit the record to the database
-    session.commit()
-
-
 
 def minute_price_historical(symbol, comparison_symbol, timestamp, exchange):
     # If possible returns a Dataframe for the last 2000 minutes
@@ -165,53 +141,6 @@ def populate():
         insert_df_aggregate(df_aggregate_ltc_bch, 'LTC', 'BCH')
         insert_df_aggregate(df_aggregate_xrp_ltc, 'XRP', 'LTC')
         insert_df_aggregate(df_aggregate_xrp_bch, 'XRP', 'BCH')
-
-
-
-        # Kraken
-        df_kraken_btc = minute_price_historical('BTC', 'USD', time, 'kraken')
-        if(df_kraken_btc is None):
-            break;
-
-        df_kraken_eth = minute_price_historical('ETH', 'USD', time, 'kraken')
-
-        df_kraken_xrp = minute_price_historical('XRP', 'USD', time, 'kraken')
-
-        df_kraken_ltc = minute_price_historical('LTC', 'USD', time, 'kraken')
-
-        df_kraken_bch = minute_price_historical('BCH', 'USD', time, 'kraken')
-
-        df_kraken_usdt = minute_price_historical('USDT', 'USD', time, 'kraken')
-
-        df_kraken_eos = minute_price_historical('EOS', 'USD', time, 'kraken')
-
-        df_kraken_bsv = minute_price_historical('BSV', 'USD', time, 'kraken')
-
-        df_kraken_xlm = minute_price_historical('XLM', 'USD', time, 'kraken')
-
-        df_kraken_ada = minute_price_historical('ADA', 'USD', time, 'kraken')
-
-        df_kraken_xmr = minute_price_historical('XMR', 'USD', time, 'kraken')
-
-        df_kraken_dash = minute_price_historical('DASH', 'USD', time, 'kraken')
-
-        df_kraken_btc_ltc = minute_price_historical('BTC', 'LTC', time, 'kraken')
-
-
-
-        insert_df_kraken(df_kraken_btc, 'BTC', 'USD')
-        insert_df_kraken(df_kraken_ada, 'ADA', 'USD')
-        insert_df_kraken(df_kraken_bch, 'BCH', 'USD')
-        insert_df_kraken(df_kraken_bsv, 'BSV', 'USD')
-        insert_df_kraken(df_kraken_dash, 'DASH', 'USD')
-        insert_df_kraken(df_kraken_eos, 'EOS', 'USD')
-        insert_df_kraken(df_kraken_eth, 'ETH', 'USD')
-        insert_df_kraken(df_kraken_ltc, 'LTC', 'USD')
-        insert_df_kraken(df_kraken_usdt, 'USDT', 'USD')
-        insert_df_kraken(df_kraken_xlm, 'XLM', 'USD')
-        insert_df_kraken(df_kraken_xmr, 'XMR', 'USD')
-        insert_df_kraken(df_kraken_xrp, 'XRP', 'USD')
-        insert_df_kraken(df_kraken_btc_ltc, 'BTC', 'LTC')
 
         time = get_first_aggregate()
     print(time)
