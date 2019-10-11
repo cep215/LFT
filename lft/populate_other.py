@@ -47,6 +47,7 @@ def minute_price_historical(symbol, comparison_symbol, exchange):
 
 
 def populate():
+    #Aggregate USD
     df_aggregate_btc = minute_price_historical('BTC', 'USD', '')
     df_aggregate_eth = minute_price_historical('ETH', 'USD', '')
     df_aggregate_xrp = minute_price_historical('XRP', 'USD', '')
@@ -64,6 +65,25 @@ def populate():
     insert_df_aggregate(df_aggregate_trx, 'TRX', 'USD')
     insert_df_aggregate(df_aggregate_xlm, 'XLM', 'USD')
     insert_df_aggregate(df_aggregate_xrp, 'XRP', 'USD')
+
+    #Aggregate USDT
+    df_aggregate_btc = minute_price_historical('BTC', 'USDT', '')
+    df_aggregate_eth = minute_price_historical('ETH', 'USDT', '')
+    df_aggregate_xrp = minute_price_historical('XRP', 'USDT', '')
+    df_aggregate_ltc = minute_price_historical('LTC', 'USDT', '')
+    df_aggregate_bch = minute_price_historical('BCH', 'USDT', '')
+    df_aggregate_eos = minute_price_historical('EOS', 'USDT', '')
+    df_aggregate_xlm = minute_price_historical('XLM', 'USDT', '')
+    df_aggregate_trx = minute_price_historical('TRX', 'USDT', '')
+
+    insert_df_aggregate(df_aggregate_btc, 'BTC', 'USDT')
+    insert_df_aggregate(df_aggregate_bch, 'BCH', 'USDT')
+    insert_df_aggregate(df_aggregate_eos, 'EOS', 'USDT')
+    insert_df_aggregate(df_aggregate_eth, 'ETH', 'USDT')
+    insert_df_aggregate(df_aggregate_ltc, 'LTC', 'USDT')
+    insert_df_aggregate(df_aggregate_trx, 'TRX', 'USDT')
+    insert_df_aggregate(df_aggregate_xlm, 'XLM', 'USDT')
+    insert_df_aggregate(df_aggregate_xrp, 'XRP', 'USDT')
 
 
     df_binance_btc = minute_price_historical('BTC', 'USDT', 'binance')
