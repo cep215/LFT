@@ -2,7 +2,7 @@ import os
 import requests
 import datetime
 import pandas as pd
-from db_def import Aggregate, Kraken, engine
+from db_def import Aggregate, Binance, engine
 from db_def import session, Session
 
 
@@ -60,80 +60,7 @@ def populate():
         if (df_aggregate_btc is None):
             break;
 
-        # df_aggregate_eth = minute_price_historical('ETH', 'USD', time, '')
-        #
-        # df_aggregate_xrp = minute_price_historical('XRP', 'USD', time, '')
-        #
-        # df_aggregate_ltc = minute_price_historical('LTC', 'USD', time, '')
-        #
-        # df_aggregate_bch = minute_price_historical('BCH', 'USD', time, '')
-        #
-        # df_aggregate_bnb = minute_price_historical('BNB', 'USD', time, '')
-        #
-        # df_aggregate_usdt = minute_price_historical('USDT', 'USD', time, '')
-        #
-        # df_aggregate_eos = minute_price_historical('EOS', 'USD', time, '')
-        #
-        # df_aggregate_bsv = minute_price_historical('BSV', 'USD', time, '')
-        #
-        # df_aggregate_xlm = minute_price_historical('XLM', 'USD', time, '')
-        #
-        # df_aggregate_ada = minute_price_historical('ADA', 'USD', time, '')
-        #
-        # df_aggregate_trx = minute_price_historical('TRX', 'USD', time, '')
-        #
-        # df_aggregate_xmr = minute_price_historical('XMR', 'USD', time, '')
-        #
-        # df_aggregate_leo = minute_price_historical('LEO', 'USD', time, '')
-        #
-        # df_aggregate_dash = minute_price_historical('DASH', 'USD', time, '')
-        #
-        # df_aggregate_btc_eth = minute_price_historical('BTC', 'ETH', time, '')
-        #
-        # df_aggregate_btc_xrp = minute_price_historical('BTC', 'XRP', time, '')
-        #
-        # df_aggregate_btc_ltc = minute_price_historical('BTC', 'LTC', time, '')
-        #
-        # df_aggregate_btc_bch = minute_price_historical('BTC', 'BCH', time, '')
-        #
-        # df_aggregate_eth_xrp = minute_price_historical('ETH', 'XRP', time, '')
-        #
-        # df_aggregate_eth_ltc = minute_price_historical('ETH', 'LTC', time, '')
-        #
-        # df_aggregate_eth_bch = minute_price_historical('ETH', 'BCH', time, '')
-        #
-        # df_aggregate_xrp_ltc = minute_price_historical('XRP', 'LTC', time, '')
-        #
-        # df_aggregate_xrp_bch = minute_price_historical('XRP', 'BCH', time, '')
-        #
-        # df_aggregate_ltc_bch = minute_price_historical('LTC', 'BCH', time, '')
-
-
         insert_df_aggregate(df_aggregate_btc, 'BTC', 'USD')
-        # insert_df_aggregate(df_aggregate_ada, 'ADA', 'USD')
-        # insert_df_aggregate(df_aggregate_bch, 'BCH', 'USD')
-        # insert_df_aggregate(df_aggregate_bnb, 'BNB', 'USD')
-        # insert_df_aggregate(df_aggregate_bsv, 'BSV', 'USD')
-        # insert_df_aggregate(df_aggregate_dash, 'DASH', 'USD')
-        # insert_df_aggregate(df_aggregate_eos, 'EOS', 'USD')
-        # insert_df_aggregate(df_aggregate_leo, 'LEO', 'USD')
-        # insert_df_aggregate(df_aggregate_eth, 'ETH', 'USD')
-        # insert_df_aggregate(df_aggregate_ltc, 'LTC', 'USD')
-        # insert_df_aggregate(df_aggregate_trx, 'TRX', 'USD')
-        # insert_df_aggregate(df_aggregate_usdt, 'USDT', 'USD')
-        # insert_df_aggregate(df_aggregate_xlm, 'XLM', 'USD')
-        # insert_df_aggregate(df_aggregate_xmr, 'XMR', 'USD')
-        # insert_df_aggregate(df_aggregate_xrp, 'XRP', 'USD')
-        # insert_df_aggregate(df_aggregate_btc_eth, 'BTC', 'ETH')
-        # insert_df_aggregate(df_aggregate_btc_xrp, 'BTC', 'XRP')
-        # insert_df_aggregate(df_aggregate_btc_ltc, 'BTC', 'LTC')
-        # insert_df_aggregate(df_aggregate_btc_bch, 'BTC', 'BCH')
-        # insert_df_aggregate(df_aggregate_eth_xrp, 'ETH', 'XRP')
-        # insert_df_aggregate(df_aggregate_eth_ltc, 'ETH', 'LTC')
-        # insert_df_aggregate(df_aggregate_eth_bch, 'ETH', 'BCH')
-        # insert_df_aggregate(df_aggregate_ltc_bch, 'LTC', 'BCH')
-        # insert_df_aggregate(df_aggregate_xrp_ltc, 'XRP', 'LTC')
-        # insert_df_aggregate(df_aggregate_xrp_bch, 'XRP', 'BCH')
 
 
         time = get_first_aggregate()

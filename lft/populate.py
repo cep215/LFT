@@ -2,7 +2,7 @@ import os
 import requests
 import datetime
 import pandas as pd
-from db_def import Aggregate, Kraken, engine
+from db_def import Aggregate, Binance, engine
 from db_def import session, Session
 
 

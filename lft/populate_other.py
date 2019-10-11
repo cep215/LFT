@@ -2,7 +2,7 @@ import os
 import requests
 import datetime
 import pandas as pd
-from db_def import Aggregate, Kraken, engine
+from db_def import Aggregate, Binance, engine
 from db_def import session, Session
 
 
@@ -30,12 +30,10 @@ def insert_df_aggregate(df, from_currency, to_currency):
 
 
 
-def minute_price_historical(symbol, comparison_symbol, timestamp, exchange):
+def minute_price_historical(symbol, comparison_symbol, exchange):
     # If possible returns a Dataframe for the last 2000 minutes
     url = 'https://min-api.cryptocompare.com/data/histominute?fsym={}&tsym={}&limit=2000'\
             .format(symbol.upper(), comparison_symbol.upper())
-    if timestamp:
-        url += '&toTs={}'.format(timestamp)
     if exchange:
         url += '&e={}'.format(exchange)
     page = requests.get(url)
@@ -48,102 +46,42 @@ def minute_price_historical(symbol, comparison_symbol, timestamp, exchange):
         return None
 
 
-
-def get_last_aggregate():
-    # Return the time of the oldest element
-    obj = session.query(Aggregate).order_by(Aggregate.time.desc()).first()
-    return obj.time
-
-def get_first_aggregate():
-    #Return the time of the oldest element
-    obj = session.query(Aggregate).order_by(Aggregate.time).first()
-    return obj.time
-
 def populate():
-    time = ''
-    while(True):
-        # Aggregate
-        df_aggregate_btc = minute_price_historical('BTC', 'USD', time, '')
-        if (df_aggregate_btc is None):
-            break;
+    df_aggregate_btc = minute_price_historical('BTC', 'USD', '')
+    df_aggregate_eth = minute_price_historical('ETH', 'USD', '')
+    df_aggregate_xrp = minute_price_historical('XRP', 'USD', '')
+    df_aggregate_ltc = minute_price_historical('LTC', 'USD', '')
+    df_aggregate_bch = minute_price_historical('BCH', 'USD', '')
+    df_aggregate_eos = minute_price_historical('EOS', 'USD', '')
+    df_aggregate_xlm = minute_price_historical('XLM', 'USD', '')
+    df_aggregate_trx = minute_price_historical('TRX', 'USD', '')
 
-        df_aggregate_eth = minute_price_historical('ETH', 'USD', time, '')
-
-        df_aggregate_xrp = minute_price_historical('XRP', 'USD', time, '')
-
-        df_aggregate_ltc = minute_price_historical('LTC', 'USD', time, '')
-
-        df_aggregate_bch = minute_price_historical('BCH', 'USD', time, '')
-
-        df_aggregate_bnb = minute_price_historical('BNB', 'USD', time, '')
-
-        df_aggregate_usdt = minute_price_historical('USDT', 'USD', time, '')
-
-        df_aggregate_eos = minute_price_historical('EOS', 'USD', time, '')
-
-        df_aggregate_bsv = minute_price_historical('BSV', 'USD', time, '')
-
-        df_aggregate_xlm = minute_price_historical('XLM', 'USD', time, '')
-
-        df_aggregate_ada = minute_price_historical('ADA', 'USD', time, '')
-
-        df_aggregate_trx = minute_price_historical('TRX', 'USD', time, '')
-
-        df_aggregate_xmr = minute_price_historical('XMR', 'USD', time, '')
-
-        df_aggregate_leo = minute_price_historical('LEO', 'USD', time, '')
-
-        df_aggregate_dash = minute_price_historical('DASH', 'USD', time, '')
-
-        df_aggregate_btc_eth = minute_price_historical('BTC', 'ETH', time, '')
-
-        df_aggregate_btc_xrp = minute_price_historical('BTC', 'XRP', time, '')
-
-        df_aggregate_btc_ltc = minute_price_historical('BTC', 'LTC', time, '')
-
-        df_aggregate_btc_bch = minute_price_historical('BTC', 'BCH', time, '')
-
-        df_aggregate_eth_xrp = minute_price_historical('ETH', 'XRP', time, '')
-
-        df_aggregate_eth_ltc = minute_price_historical('ETH', 'LTC', time, '')
-
-        df_aggregate_eth_bch = minute_price_historical('ETH', 'BCH', time, '')
-
-        df_aggregate_xrp_ltc = minute_price_historical('XRP', 'LTC', time, '')
-
-        df_aggregate_xrp_bch = minute_price_historical('XRP', 'BCH', time, '')
-
-        df_aggregate_ltc_bch = minute_price_historical('LTC', 'BCH', time, '')
+    insert_df_aggregate(df_aggregate_btc, 'BTC', 'USD')
+    insert_df_aggregate(df_aggregate_bch, 'BCH', 'USD')
+    insert_df_aggregate(df_aggregate_eos, 'EOS', 'USD')
+    insert_df_aggregate(df_aggregate_eth, 'ETH', 'USD')
+    insert_df_aggregate(df_aggregate_ltc, 'LTC', 'USD')
+    insert_df_aggregate(df_aggregate_trx, 'TRX', 'USD')
+    insert_df_aggregate(df_aggregate_xlm, 'XLM', 'USD')
+    insert_df_aggregate(df_aggregate_xrp, 'XRP', 'USD')
 
 
-        insert_df_aggregate(df_aggregate_btc, 'BTC', 'USD')
-        insert_df_aggregate(df_aggregate_ada, 'ADA', 'USD')
-        insert_df_aggregate(df_aggregate_bch, 'BCH', 'USD')
-        insert_df_aggregate(df_aggregate_bnb, 'BNB', 'USD')
-        insert_df_aggregate(df_aggregate_bsv, 'BSV', 'USD')
-        insert_df_aggregate(df_aggregate_dash, 'DASH', 'USD')
-        insert_df_aggregate(df_aggregate_eos, 'EOS', 'USD')
-        insert_df_aggregate(df_aggregate_leo, 'LEO', 'USD')
-        insert_df_aggregate(df_aggregate_eth, 'ETH', 'USD')
-        insert_df_aggregate(df_aggregate_ltc, 'LTC', 'USD')
-        insert_df_aggregate(df_aggregate_trx, 'TRX', 'USD')
-        insert_df_aggregate(df_aggregate_usdt, 'USDT', 'USD')
-        insert_df_aggregate(df_aggregate_xlm, 'XLM', 'USD')
-        insert_df_aggregate(df_aggregate_xmr, 'XMR', 'USD')
-        insert_df_aggregate(df_aggregate_xrp, 'XRP', 'USD')
-        insert_df_aggregate(df_aggregate_btc_eth, 'BTC', 'ETH')
-        insert_df_aggregate(df_aggregate_btc_xrp, 'BTC', 'XRP')
-        insert_df_aggregate(df_aggregate_btc_ltc, 'BTC', 'LTC')
-        insert_df_aggregate(df_aggregate_btc_bch, 'BTC', 'BCH')
-        insert_df_aggregate(df_aggregate_eth_xrp, 'ETH', 'XRP')
-        insert_df_aggregate(df_aggregate_eth_ltc, 'ETH', 'LTC')
-        insert_df_aggregate(df_aggregate_eth_bch, 'ETH', 'BCH')
-        insert_df_aggregate(df_aggregate_ltc_bch, 'LTC', 'BCH')
-        insert_df_aggregate(df_aggregate_xrp_ltc, 'XRP', 'LTC')
-        insert_df_aggregate(df_aggregate_xrp_bch, 'XRP', 'BCH')
+    df_binance_btc = minute_price_historical('BTC', 'USDT', 'binance')
+    df_binance_eth = minute_price_historical('ETH', 'USDT', 'binance')
+    df_binance_xrp = minute_price_historical('XRP', 'USDT', 'binance')
+    df_binance_ltc = minute_price_historical('LTC', 'USDT', 'binance')
+    df_binance_bch = minute_price_historical('BCH', 'USDT', 'binance')
+    df_binance_eos = minute_price_historical('EOS', 'USDT', 'binance')
+    df_binance_xlm = minute_price_historical('XLM', 'USDT', 'binance')
+    df_binance_trx = minute_price_historical('TRX', 'USDT', 'binance')
 
-        time = get_first_aggregate()
-    print(time)
-
+    insert_df_aggregate(df_binance_btc, 'BTC', 'USDT')
+    insert_df_aggregate(df_binance_bch, 'BCH', 'USDT')
+    insert_df_aggregate(df_binance_eos, 'EOS', 'USDT')
+    insert_df_aggregate(df_binance_eth, 'ETH', 'USDT')
+    insert_df_aggregate(df_binance_ltc, 'LTC', 'USDT')
+    insert_df_aggregate(df_binance_trx, 'TRX', 'USDT')
+    insert_df_aggregate(df_binance_xlm, 'XLM', 'USDT')
+    insert_df_aggregate(df_binance_xrp, 'XRP', 'USDT')
 
 populate()

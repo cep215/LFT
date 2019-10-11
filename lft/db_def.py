@@ -46,9 +46,9 @@ class Aggregate(Base):
         self.to_currency   = to_currency
         self.exchange      = exchange
 
-class Kraken(Base):
+class Binance(Base):
     """"""
-    __tablename__ = "kraken"
+    __tablename__ = "binance"
 
 
     id            = Column(Integer, primary_key = True)
@@ -60,12 +60,12 @@ class Kraken(Base):
     volumefrom    = Column(Float)
     volumeto      = Column(Float)
     from_currency = Column(String,  default = 'BTC')
-    to_currency   = Column(String,  default = 'USD')
-    exchange      = Column(String,  default = 'kraken')
+    to_currency   = Column(String,  default = 'USDT')
+    exchange      = Column(String,  default = 'binance')
 
 
     # ----------------------------------------------------------------------
-    def __init__(self, time, close, high, low, open, volumefrom, volumeto, from_currency = 'BTC', to_currency = 'USD', exchange = 'kraken'):
+    def __init__(self, time, close, high, low, open, volumefrom, volumeto, from_currency = 'BTC', to_currency = 'USDT', exchange = 'binance'):
         """"""
         self.time          = time
         self.close         = close
@@ -77,6 +77,8 @@ class Kraken(Base):
         self.from_currency = from_currency
         self.to_currency   = to_currency
         self.exchange      = exchange
+
+
 
 
 # create tables
