@@ -28,6 +28,28 @@ def insert_df_aggregate(df, from_currency, to_currency):
     # commit the record to the database
     session.commit()
 
+def insert_df_binance(df, from_currency, to_currency):
+    for index, row in df.iterrows():
+        # access data using column names]
+        item = session.query(Binance).filter_by(from_currency=from_currency).filter_by(to_currency=to_currency).filter_by(time=row['time']).first()
+        if (item is None):
+
+            agg = Aggregate(row['time'], row['close'], row['high'], row['low'],
+                            row['open'], row['volumefrom'], row['volumeto'], from_currency=from_currency, to_currency=to_currency)
+            session.add(agg)
+        # check back in time to see if volume of transactions increased
+        else:
+            item.close      = row['close']
+            item.high       = row['high']
+            item.low        = row['low']
+            item.open       = row['open']
+            item.volumefrom = row['volumefrom']
+            item.volumeto   = row['volumeto']
+
+
+    # commit the record to the database
+    session.commit()
+
 
 
 def minute_price_historical(symbol, comparison_symbol, exchange):
@@ -95,13 +117,13 @@ def populate():
     df_binance_xlm = minute_price_historical('XLM', 'USDT', 'binance')
     df_binance_trx = minute_price_historical('TRX', 'USDT', 'binance')
 
-    insert_df_aggregate(df_binance_btc, 'BTC', 'USDT')
-    insert_df_aggregate(df_binance_bch, 'BCH', 'USDT')
-    insert_df_aggregate(df_binance_eos, 'EOS', 'USDT')
-    insert_df_aggregate(df_binance_eth, 'ETH', 'USDT')
-    insert_df_aggregate(df_binance_ltc, 'LTC', 'USDT')
-    insert_df_aggregate(df_binance_trx, 'TRX', 'USDT')
-    insert_df_aggregate(df_binance_xlm, 'XLM', 'USDT')
-    insert_df_aggregate(df_binance_xrp, 'XRP', 'USDT')
+    insert_df_binance(df_binance_btc, 'BTC', 'USDT')
+    insert_df_binance(df_binance_bch, 'BCH', 'USDT')
+    insert_df_binance(df_binance_eos, 'EOS', 'USDT')
+    insert_df_binance(df_binance_eth, 'ETH', 'USDT')
+    insert_df_binance(df_binance_ltc, 'LTC', 'USDT')
+    insert_df_binance(df_binance_trx, 'TRX', 'USDT')
+    insert_df_binance(df_binance_xlm, 'XLM', 'USDT')
+    insert_df_binance(df_binance_xrp, 'XRP', 'USDT')
 
 populate()
