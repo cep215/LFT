@@ -21,6 +21,21 @@ def insert_df_aggregate(df, from_currency, to_currency):
     # commit the record to the database
     session.commit()
 
+def insert_df_binance(df, from_currency, to_currency):
+
+
+    # Create objects
+    for index, row in df.iterrows():
+        # access data using column names]
+        item = session.query(Binance).filter_by(from_currency=from_currency).filter_by(to_currency=to_currency).filter_by(time=row['time']).first()
+        if (item is None):
+
+            agg = Aggregate(row['time'], row['close'], row['high'], row['low'],
+                            row['open'], row['volumefrom'], row['volumeto'], from_currency=from_currency, to_currency=to_currency)
+            session.add(agg)
+    # commit the record to the database
+    session.commit()
+
 
 
 def minute_price_historical(symbol, comparison_symbol, timestamp, exchange):
@@ -60,7 +75,64 @@ def populate():
         if (df_aggregate_btc is None):
             break;
 
+        df_aggregate_eth = minute_price_historical('ETH', 'USD', '')
+        df_aggregate_xrp = minute_price_historical('XRP', 'USD', '')
+        df_aggregate_ltc = minute_price_historical('LTC', 'USD', '')
+        df_aggregate_bch = minute_price_historical('BCH', 'USD', '')
+        df_aggregate_eos = minute_price_historical('EOS', 'USD', '')
+        df_aggregate_xlm = minute_price_historical('XLM', 'USD', '')
+        df_aggregate_trx = minute_price_historical('TRX', 'USD', '')
+
         insert_df_aggregate(df_aggregate_btc, 'BTC', 'USD')
+        insert_df_aggregate(df_aggregate_bch, 'BCH', 'USD')
+        insert_df_aggregate(df_aggregate_eos, 'EOS', 'USD')
+        insert_df_aggregate(df_aggregate_eth, 'ETH', 'USD')
+        insert_df_aggregate(df_aggregate_ltc, 'LTC', 'USD')
+        insert_df_aggregate(df_aggregate_trx, 'TRX', 'USD')
+        insert_df_aggregate(df_aggregate_xlm, 'XLM', 'USD')
+        insert_df_aggregate(df_aggregate_xrp, 'XRP', 'USD')
+
+        df_aggregate_btc_usdt = minute_price_historical('BTC', 'USDT', '')
+        if (df_aggregate_btc_usdt is None):
+            break;
+
+        df_aggregate_eth_usdt = minute_price_historical('ETH', 'USDT', '')
+        df_aggregate_xrp_usdt = minute_price_historical('XRP', 'USDT', '')
+        df_aggregate_ltc_usdt = minute_price_historical('LTC', 'USDT', '')
+        df_aggregate_bch_usdt = minute_price_historical('BCH', 'USDT', '')
+        df_aggregate_eos_usdt = minute_price_historical('EOS', 'USDT', '')
+        df_aggregate_xlm_usdt = minute_price_historical('XLM', 'USDT', '')
+        df_aggregate_trx_usdt = minute_price_historical('TRX', 'USDT', '')
+
+        insert_df_aggregate(df_aggregate_btc_usdt, 'BTC', 'USDT')
+        insert_df_aggregate(df_aggregate_bch_usdt, 'BCH', 'USDT')
+        insert_df_aggregate(df_aggregate_eos_usdt, 'EOS', 'USDT')
+        insert_df_aggregate(df_aggregate_eth_usdt, 'ETH', 'USDT')
+        insert_df_aggregate(df_aggregate_ltc_usdt, 'LTC', 'USDT')
+        insert_df_aggregate(df_aggregate_trx_usdt, 'TRX', 'USDT')
+        insert_df_aggregate(df_aggregate_xlm_usdt, 'XLM', 'USDT')
+        insert_df_aggregate(df_aggregate_xrp_usdt, 'XRP', 'USDT')
+
+        df_binance_btc = minute_price_historical('BTC', 'USDT', 'binance')
+        if (df_binance_btc is None):
+            break;
+
+        df_binance_eth = minute_price_historical('ETH', 'USDT', 'binance')
+        df_binance_xrp = minute_price_historical('XRP', 'USDT', 'binance')
+        df_binance_ltc = minute_price_historical('LTC', 'USDT', 'binance')
+        df_binance_bch = minute_price_historical('BCH', 'USDT', 'binance')
+        df_binance_eos = minute_price_historical('EOS', 'USDT', 'binance')
+        df_binance_xlm = minute_price_historical('XLM', 'USDT', 'binance')
+        df_binance_trx = minute_price_historical('TRX', 'USDT', 'binance')
+
+        insert_df_binance(df_binance_btc, 'BTC', 'USDT')
+        insert_df_binance(df_binance_bch, 'BCH', 'USDT')
+        insert_df_binance(df_binance_eos, 'EOS', 'USDT')
+        insert_df_binance(df_binance_eth, 'ETH', 'USDT')
+        insert_df_binance(df_binance_ltc, 'LTC', 'USDT')
+        insert_df_binance(df_binance_trx, 'TRX', 'USDT')
+        insert_df_binance(df_binance_xlm, 'XLM', 'USDT')
+        insert_df_binance(df_binance_xrp, 'XRP', 'USDT')
 
 
         time = get_first_aggregate()
