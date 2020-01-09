@@ -1,11 +1,3 @@
-# LFT
+LFT 
 
-AWS log in: 
-
-    ssh ubuntu@ec2-18-224-69-153.us-east-2.compute.amazonaws.com
-
-Clarifications:
-
-    volumeto  Volume in BTC traded in that particular minute.
-  
-    volumefrom  Volume in USD traded in that particular minute.
+LFT is a low frequency trading platform designed for cryptocurrency trading that gathers aggregate data from top exchanges and extracts features based on statistical and financial instruments in order to allow people to create their own trading strategies.
