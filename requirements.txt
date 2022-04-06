@@ -23,7 +23,7 @@ requests==2.22.0
 six==1.12.0
 SQLAlchemy==1.3.4
 traceback2==1.4.0
-Twisted==19.2.1
+Twisted==22.2.0
 unittest2==1.1.0
 urllib3==1.25.3
 zope.interface==4.6.0
