@@ -9,7 +9,7 @@ hyperlink==19.0.0
 idna==2.8
 incremental==17.5.0
 linecache2==1.0.0
-Mako==1.0.12
+Mako==1.2.2
 MarkupSafe==1.1.1
 mock==3.0.5
 numpy==1.16.4
